@@ -32,7 +32,6 @@
         <div class="notebook-header">
           <div class="notebook-header-top">
             <h1 id="notebook-title">Sổ tay của bạn</h1>
-            <button id="review-now-btn" class="btn-primary">Ôn tập hôm nay</button>
           </div>
 
           <div id="notebook-grid" class="notebook-grid" aria-live="polite">
@@ -43,6 +42,7 @@
         <div id="notebook-detail" class="notebook-detail hidden">
           <div class="notebook-detail-head">
             <h2 id="selected-notebook-title"></h2>
+            <button id="start-review-btn" class="btn-primary">Ôn tập</button>
             <input id="search-input" placeholder="Tìm kiếm từ..." />
           </div>
           <div class="vocab-list" id="vocab-list" aria-live="polite">
@@ -56,33 +56,33 @@
           <h2>Spaced Repetition</h2>
 
           <div id="sr-summary">
-            <div class="sr-item">
+            <div id="sr-item-now" class="sr-item" role="button" tabindex="0">
               <span>Ôn tập ngay</span>
               <strong id="sr-now">0</strong>
             </div>
-            <div class="sr-item">
+            <div id="sr-item-1" class="sr-item" role="button" tabindex="0">
               <span>Ngày mai</span>
               <strong id="sr-1">0</strong>
             </div>
-            <div class="sr-item">
+            <div id="sr-item-3" class="sr-item" role="button" tabindex="0">
               <span>3 ngày</span>
               <strong id="sr-3">0</strong>
             </div>
-            <div class="sr-item">
+            <div id="sr-item-7" class="sr-item" role="button" tabindex="0">
               <span>7 ngày</span>
               <strong id="sr-7">0</strong>
             </div>
-            <div class="sr-item">
+            <div id="sr-item-14" class="sr-item" role="button" tabindex="0">
               <span>14 ngày</span>
               <strong id="sr-14">0</strong>
             </div>
-            <div class="sr-item">
+            <div id="sr-item-mastered" class="sr-item" role="button" tabindex="0">
               <span>Nhớ sâu</span>
               <strong id="sr-mastered">0</strong>
             </div>
           </div>
 
-          <button id="start-review-btn" class="btn-primary full-width">Bắt đầu ôn tập</button>
+          <button id="review-now-btn" class="btn-primary full-width">Ôn tập hôm nay</button>
         </div>
       </aside>
     </main>
@@ -92,20 +92,22 @@
   <div id="review-modal" class="auth-modal hidden" aria-hidden="true">
     <div class="auth-modal-card" style="max-width:680px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 id="review-word">Từ</h3>
+        <h3 id="review-title">Ôn tập từ vựng</h3>
         <button id="close-review" class="icon-btn">x</button>
       </div>
+      <div id="review-progress" style="margin-bottom:10px;color:var(--text-soft);font-size:13px;"></div>
 
-      <div id="review-card" style="padding:16px;border-radius:12px;border:1px solid var(--line);background:rgba(7,19,41,0.7);min-height:140px;">
+      <div id="review-card" style="padding:16px;border-radius:12px;border:1px solid var(--line);background:rgba(7,19,41,0.7);min-height:140px;cursor:pointer;">
+        <div id="review-word" style="font-size:28px;font-weight:700;line-height:1.2;"></div>
         <div id="review-phonetic" style="color:var(--accent)"></div>
         <div id="review-meaning" style="margin-top:10px;color:var(--text-soft)"></div>
       </div>
+      <div id="review-hint" style="margin-top:8px;font-size:12px;color:var(--text-soft);">Bấm để xem nghĩa</div>
 
-      <div style="display:flex;gap:12px;margin-top:16px;">
-        <button id="btn-show-meaning" class="btn-outline">Hiện nghĩa</button>
+      <div id="review-actions" class="hidden" style="display:flex;gap:12px;margin-top:16px;">
         <div style="flex:1"></div>
-        <button id="btn-wrong" class="btn-outline">Sai</button>
-        <button id="btn-correct" class="btn-primary">Đúng</button>
+        <button id="btn-wrong" class="btn-outline">Chưa thuộc</button>
+        <button id="btn-correct" class="btn-primary">Đã thuộc</button>
       </div>
     </div>
   </div>

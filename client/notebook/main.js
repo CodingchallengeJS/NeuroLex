@@ -15,6 +15,12 @@
   const sr7 = document.getElementById('sr-7');
   const sr14 = document.getElementById('sr-14');
   const srMastered = document.getElementById('sr-mastered');
+  const srItemNow = document.getElementById('sr-item-now');
+  const srItem1 = document.getElementById('sr-item-1');
+  const srItem3 = document.getElementById('sr-item-3');
+  const srItem7 = document.getElementById('sr-item-7');
+  const srItem14 = document.getElementById('sr-item-14');
+  const srItemMastered = document.getElementById('sr-item-mastered');
   const startReviewBtn = document.getElementById('start-review-btn');
   const reviewNowBtn = document.getElementById('review-now-btn');
 
@@ -23,15 +29,22 @@
   const reviewWordEl = document.getElementById('review-word');
   const reviewPhoneticEl = document.getElementById('review-phonetic');
   const reviewMeaningEl = document.getElementById('review-meaning');
-  const btnShowMeaning = document.getElementById('btn-show-meaning');
+  const reviewCardEl = document.getElementById('review-card');
+  const reviewProgressEl = document.getElementById('review-progress');
+  const reviewHintEl = document.getElementById('review-hint');
+  const reviewActionsEl = document.getElementById('review-actions');
   const btnWrong = document.getElementById('btn-wrong');
   const btnCorrect = document.getElementById('btn-correct');
 
   let notebooks = [];
   let currentNotebookId = null;
   let currentVocabList = [];
+
   let reviewQueue = [];
   let currentReviewIndex = 0;
+  let reviewMode = 'sequence'; // 'sequence' | 'single' | 'bucket'
+  let reviewBucketLabel = '';
+  let meaningRevealed = false;
 
   function getToken() {
     return localStorage.getItem(TOKEN_KEY);
@@ -47,11 +60,19 @@
       ...options,
       headers
     });
+
     const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      throw new Error(data.error || 'Request failed');
-    }
+    if (!resp.ok) throw new Error(data.error || 'Request failed');
     return data;
+  }
+
+  function shuffleInPlace(items) {
+    for (let i = items.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = items[i];
+      items[i] = items[j];
+      items[j] = temp;
+    }
   }
 
   function renderNotebookCards() {
@@ -114,7 +135,7 @@
       renderVocabList(currentVocabList);
     } catch (err) {
       console.error(err);
-      vocabList.innerHTML = '<div class="empty-state">Không thể tải danh sách. Hãy đăng nhập để lấy tiến độ.</div>';
+      vocabList.innerHTML = '<div class="empty-state">Không thể tải danh sách.</div>';
     }
   }
 
@@ -136,6 +157,7 @@
     }
 
     for (const v of filtered) {
+      const lvLabel = v.repetition_level !== null ? `Lv ${v.repetition_level}` : '';
       const card = document.createElement('div');
       card.className = 'vocab-card';
       card.innerHTML = `
@@ -145,7 +167,7 @@
           <div class="vocab-card-meaning">${v.meaning || ''}</div>
         </div>
         <div class="vocab-card-actions">
-          <div class="vocab-card-level">${v.repetition_level !== null ? `Lv ${v.repetition_level}` : ''}</div>
+          <div class="vocab-card-level">${lvLabel}</div>
           <div class="vocab-card-buttons">
             <button data-vocab-id="${v.id}" class="audio-btn">🔊</button>
             <button data-vocab-id="${v.id}" class="btn-outline btn-review">Ôn</button>
@@ -175,91 +197,173 @@
 
   function showReviewVocab(v) {
     reviewWordEl.textContent = v.word;
-    reviewPhoneticEl.textContent = v.phonetic || '';
+    reviewPhoneticEl.textContent = '';
     reviewMeaningEl.textContent = '';
-    btnShowMeaning.disabled = false;
-  }
+    meaningRevealed = false;
+    reviewActionsEl.classList.add('hidden');
+    reviewHintEl.classList.remove('hidden');
 
-  async function startReviewSession(queue) {
-    reviewQueue = queue.slice();
-    currentReviewIndex = 0;
-    if (reviewQueue.length === 0) {
-      alert('Không có từ nào để ôn.');
-      return;
+    if (reviewMode === 'sequence') {
+      reviewProgressEl.textContent = `Từ ${currentReviewIndex + 1}/${reviewQueue.length} (hết sẽ quay lại từ đầu)`;
+    } else if (reviewMode === 'bucket') {
+      reviewProgressEl.textContent = `${reviewBucketLabel}: ${currentReviewIndex + 1}/${reviewQueue.length}`;
+    } else {
+      reviewProgressEl.textContent = 'Ôn từng từ';
     }
-    showCurrentReview();
-    openReviewModal();
   }
 
   function showCurrentReview() {
     const v = reviewQueue[currentReviewIndex];
+    if (!v) return;
     showReviewVocab(v);
   }
 
+  function revealMeaning() {
+    if (meaningRevealed) return;
+    const v = reviewQueue[currentReviewIndex];
+    if (!v) return;
+    reviewPhoneticEl.textContent = v.phonetic || '';
+    reviewMeaningEl.textContent = v.meaning || '';
+    meaningRevealed = true;
+    reviewHintEl.classList.add('hidden');
+    reviewActionsEl.classList.remove('hidden');
+  }
+
   async function startSingleReview(vocabId) {
-    const v = currentVocabList.find((x) => x.id === vocabId);
+    const token = getToken();
+    if (!token) {
+      alert('Vui lòng đăng nhập để lưu tiến độ.');
+      return;
+    }
+
+    const v = currentVocabList.find((x) => Number(x.id) === vocabId);
     if (!v) {
       alert('Không tìm thấy từ.');
       return;
     }
-    await startReviewSession([v]);
+
+    reviewMode = 'single';
+    reviewBucketLabel = '';
+    reviewQueue = [v];
+    currentReviewIndex = 0;
+    showCurrentReview();
+    openReviewModal();
   }
 
-  btnShowMeaning.addEventListener('click', () => {
-    const v = reviewQueue[currentReviewIndex];
-    reviewMeaningEl.textContent = v.meaning || '';
-    btnShowMeaning.disabled = true;
-  });
-
-  closeReview.addEventListener('click', () => closeReviewModal());
-
-  btnCorrect.addEventListener('click', async () => {
-    const v = reviewQueue[currentReviewIndex];
-    try {
-      const token = getToken();
-      if (!token) throw new Error('Vui lòng đăng nhập để lưu tiến độ.');
-      await apiRequest('/review', {
-        method: 'POST',
-        body: JSON.stringify({ vocab_id: v.id, result: 'correct' })
-      });
-
-      currentReviewIndex += 1;
-      if (currentReviewIndex >= reviewQueue.length) {
-        closeReviewModal();
-        await loadVocabsForNotebook(currentNotebookId);
-        await loadSRSummary();
-        alert('Kết thúc phiên ôn. Good job!');
-      } else {
-        showCurrentReview();
-      }
-    } catch (err) {
-      alert(err.message || 'Lỗi khi ghi tiến độ.');
+  async function startNotebookReviewSession() {
+    if (!currentNotebookId) {
+      alert('Hãy chọn một sổ tay trước khi ôn tập.');
+      return;
     }
-  });
 
-  btnWrong.addEventListener('click', async () => {
-    const v = reviewQueue[currentReviewIndex];
-    try {
-      const token = getToken();
-      if (!token) throw new Error('Vui lòng đăng nhập để lưu tiến độ.');
-      await apiRequest('/review', {
-        method: 'POST',
-        body: JSON.stringify({ vocab_id: v.id, result: 'wrong' })
-      });
-
-      currentReviewIndex += 1;
-      if (currentReviewIndex >= reviewQueue.length) {
-        closeReviewModal();
-        await loadVocabsForNotebook(currentNotebookId);
-        await loadSRSummary();
-        alert('Kết thúc phiên ôn.');
-      } else {
-        showCurrentReview();
-      }
-    } catch (err) {
-      alert(err.message || 'Lỗi khi ghi tiến độ.');
+    const token = getToken();
+    if (!token) {
+      alert('Vui lòng đăng nhập để ôn tập và lưu tiến độ.');
+      return;
     }
-  });
+
+    const data = await apiRequest(`/notebooks/${currentNotebookId}/review-sequence`);
+    const vocabs = data.vocabs || [];
+    if (vocabs.length === 0) {
+      alert('Sổ tay này chưa có từ nào để ôn.');
+      return;
+    }
+
+    reviewMode = 'sequence';
+    reviewBucketLabel = '';
+    reviewQueue = vocabs;
+    currentReviewIndex = Number(data.currentIndex) || 0;
+    showCurrentReview();
+    openReviewModal();
+  }
+
+  async function startSRBucketReview(bucketKey) {
+    const token = getToken();
+    if (!token) {
+      alert('Vui lòng đăng nhập để ôn tập và lưu tiến độ.');
+      return;
+    }
+
+    const bucketConfig = {
+      due_now: { label: 'Ôn tập ngay', random: true },
+      due_1: { label: 'Ngày mai', random: false },
+      due_3: { label: '3 ngày', random: false },
+      due_7: { label: '7 ngày', random: false },
+      due_14: { label: '14 ngày', random: false },
+      mastered: { label: 'Nhớ sâu', random: true }
+    };
+
+    const config = bucketConfig[bucketKey];
+    if (!config) return;
+
+    const data = await apiRequest(`/repetition/items?bucket=${encodeURIComponent(bucketKey)}`);
+    const vocabs = (data.vocabs || []).slice();
+
+    if (config.random) {
+      shuffleInPlace(vocabs);
+    }
+
+    reviewMode = 'bucket';
+    reviewBucketLabel = config.label;
+    reviewQueue = vocabs;
+    currentReviewIndex = 0;
+
+    if (reviewQueue.length === 0) {
+      reviewWordEl.textContent = 'Không có từ vựng nào trong mục này';
+      reviewPhoneticEl.textContent = '';
+      reviewMeaningEl.textContent = '';
+      reviewProgressEl.textContent = config.label;
+      reviewHintEl.classList.add('hidden');
+      reviewActionsEl.classList.add('hidden');
+      openReviewModal();
+      return;
+    }
+
+    showCurrentReview();
+    openReviewModal();
+  }
+
+  async function submitReview(result) {
+    const v = reviewQueue[currentReviewIndex];
+    if (!v) return;
+    if (!meaningRevealed) return;
+
+    try {
+      if (reviewMode === 'sequence') {
+        const resp = await apiRequest(`/notebooks/${currentNotebookId}/review-step`, {
+          method: 'POST',
+          body: JSON.stringify({ vocab_id: Number(v.id), result })
+        });
+        currentReviewIndex = Number(resp.nextIndex) || 0;
+        showCurrentReview();
+      } else if (reviewMode === 'bucket') {
+        await apiRequest('/review', {
+          method: 'POST',
+          body: JSON.stringify({ vocab_id: Number(v.id), result })
+        });
+
+        currentReviewIndex += 1;
+        if (currentReviewIndex >= reviewQueue.length) {
+          closeReviewModal();
+        } else {
+          showCurrentReview();
+        }
+      } else {
+        await apiRequest('/review', {
+          method: 'POST',
+          body: JSON.stringify({ vocab_id: Number(v.id), result })
+        });
+        closeReviewModal();
+      }
+
+      if (currentNotebookId) {
+        await loadVocabsForNotebook(currentNotebookId);
+      }
+      await loadSRSummary();
+    } catch (err) {
+      alert(err.message || 'Lỗi khi lưu tiến độ.');
+    }
+  }
 
   async function loadSRSummary() {
     try {
@@ -270,7 +374,7 @@
       sr7.textContent = data.due_7 || 0;
       sr14.textContent = data.due_14 || 0;
       srMastered.textContent = data.mastered || 0;
-    } catch (err) {
+    } catch (_err) {
       srNow.textContent = '-';
       sr1.textContent = '-';
       sr3.textContent = '-';
@@ -280,32 +384,53 @@
     }
   }
 
+  function bindSRItem(el, bucketKey) {
+    if (!el) return;
+    el.addEventListener('click', async () => {
+      try {
+        await startSRBucketReview(bucketKey);
+      } catch (err) {
+        alert(err.message || 'Không thể bắt đầu phiên ôn.');
+      }
+    });
+    el.addEventListener('keydown', async (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      try {
+        await startSRBucketReview(bucketKey);
+      } catch (err) {
+        alert(err.message || 'Không thể bắt đầu phiên ôn.');
+      }
+    });
+  }
+
+  reviewCardEl.addEventListener('click', revealMeaning);
+  closeReview.addEventListener('click', closeReviewModal);
+  btnCorrect.addEventListener('click', () => submitReview('correct'));
+  btnWrong.addEventListener('click', () => submitReview('wrong'));
+
   startReviewBtn.addEventListener('click', async () => {
     try {
-      if (!currentNotebookId) {
-        alert('Hãy chọn một sổ tay trước khi ôn tập.');
-        return;
-      }
-
-      const data = await apiRequest(`/notebooks/${currentNotebookId}/vocabs`);
-      const vocs = data.vocabs || [];
-      const due = vocs.filter((v) => {
-        if (!v.next_review_at) return false;
-        const nr = new Date(v.next_review_at);
-        return nr <= new Date();
-      });
-
-      if (due.length === 0) {
-        alert('Không có từ cần ôn ngay trong sổ tay này.');
-        return;
-      }
-      await startReviewSession(due);
+      await startNotebookReviewSession();
     } catch (err) {
-      alert(err.message || 'Vui lòng đăng nhập để ôn tập.');
+      alert(err.message || 'Không thể bắt đầu phiên ôn.');
     }
   });
 
-  reviewNowBtn.addEventListener('click', () => startReviewBtn.click());
+  bindSRItem(srItemNow, 'due_now');
+  bindSRItem(srItem1, 'due_1');
+  bindSRItem(srItem3, 'due_3');
+  bindSRItem(srItem7, 'due_7');
+  bindSRItem(srItem14, 'due_14');
+  bindSRItem(srItemMastered, 'mastered');
+
+  reviewNowBtn.addEventListener('click', async () => {
+    try {
+      await startSRBucketReview('due_now');
+    } catch (err) {
+      alert(err.message || 'Không thể bắt đầu phiên ôn.');
+    }
+  });
   searchInput.addEventListener('input', () => renderVocabList(currentVocabList));
 
   (async function init() {

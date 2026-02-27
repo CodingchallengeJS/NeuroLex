@@ -60,3 +60,10 @@ CREATE TABLE user_vocab_progress (
 );
 
 CREATE INDEX idx_user_review_time ON user_vocab_progress(user_id, next_review_at);
+
+CREATE TABLE user_notebook_progress (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    notebook_id INTEGER REFERENCES notebooks(id) ON DELETE CASCADE,
+    current_word_id INTEGER REFERENCES vocabulary(id) ON DELETE SET NULL,
+    PRIMARY KEY (user_id, notebook_id)
+);

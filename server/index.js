@@ -318,6 +318,230 @@ app.get('/repetition/summary', authenticateToken, async (req, res) => {
 });
 
 /**
+ * GET /repetition/items?bucket=due_now|due_1|due_3|due_7|due_14|mastered
+ * require auth
+ * returns vocab items in selected repetition bucket
+ */
+app.get('/repetition/items', authenticateToken, async (req, res) => {
+  const userId = Number(req.auth.userId);
+  const bucket = String(req.query.bucket || '');
+  const conditions = {
+    due_now: 'uvp.next_review_at <= now()',
+    due_1: "date(uvp.next_review_at) = date(now() + INTERVAL '1 day')",
+    due_3: "date(uvp.next_review_at) = date(now() + INTERVAL '3 day')",
+    due_7: "date(uvp.next_review_at) = date(now() + INTERVAL '7 day')",
+    due_14: "date(uvp.next_review_at) = date(now() + INTERVAL '14 day')",
+    mastered: 'uvp.mastered = TRUE'
+  };
+
+  const whereCondition = conditions[bucket];
+  if (!whereCondition) {
+    return res.status(400).json({ error: 'Invalid bucket' });
+  }
+
+  try {
+    const q = `
+      SELECT
+        v.id, v.word, v.meaning, v.phonetic, v.image_url,
+        uvp.repetition_level, uvp.interval_days, uvp.next_review_at, uvp.correct_streak, uvp.mastered
+      FROM user_vocab_progress uvp
+      JOIN vocabulary v ON v.id = uvp.vocab_id
+      WHERE uvp.user_id = $1 AND ${whereCondition}
+      ORDER BY uvp.next_review_at ASC, v.word ASC
+    `;
+    const r = await pool.query(q, [userId]);
+    return res.json({ vocabs: r.rows });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+function getIntervalDaysForLevel(level) {
+  const intervalByLevel = {
+    '-1': 0,
+    0: 1,
+    1: 3,
+    2: 7,
+    3: 14,
+    4: 30
+  };
+  if (Object.prototype.hasOwnProperty.call(intervalByLevel, level)) {
+    return intervalByLevel[level];
+  }
+  return 30;
+}
+
+async function applyReviewResult(client, userId, vocabId, result) {
+  const now = new Date();
+  const getRes = await client.query('SELECT * FROM user_vocab_progress WHERE user_id = $1 AND vocab_id = $2 LIMIT 1', [userId, vocabId]);
+
+  if (getRes.rowCount === 0) {
+    const repetitionLevel = result === 'correct' ? 0 : -1;
+    const intervalDays = getIntervalDaysForLevel(repetitionLevel);
+    const nextReviewAt = new Date(now.getTime() + intervalDays * 24 * 3600 * 1000);
+    const correctStreak = result === 'correct' ? 1 : 0;
+    const mastered = repetitionLevel >= 4;
+
+    const insertQ = `INSERT INTO user_vocab_progress
+      (user_id, vocab_id, repetition_level, interval_days, next_review_at, last_reviewed_at, correct_streak, total_reviews, mastered, created_at, updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())
+      RETURNING *`;
+    const insertVals = [userId, vocabId, repetitionLevel, intervalDays, nextReviewAt, now, correctStreak, 1, mastered];
+    const ins = await client.query(insertQ, insertVals);
+    return ins.rows[0];
+  }
+
+  const row = getRes.rows[0];
+  let newLevel = Number.isInteger(row.repetition_level) ? row.repetition_level : 0;
+  let correctStreak = row.correct_streak || 0;
+  const totalReviews = (row.total_reviews || 0) + 1;
+
+  if (result === 'wrong') {
+    newLevel = -1;
+    correctStreak = 0;
+  } else {
+    newLevel = Math.min(newLevel + 1, 4);
+    correctStreak += 1;
+  }
+
+  const intervalDays = getIntervalDaysForLevel(newLevel);
+  const nextReviewAt = new Date(now.getTime() + intervalDays * 24 * 3600 * 1000);
+  const mastered = newLevel >= 4;
+
+  const updateQ = `
+    UPDATE user_vocab_progress
+    SET repetition_level = $1,
+        interval_days = $2,
+        next_review_at = $3,
+        last_reviewed_at = $4,
+        correct_streak = $5,
+        total_reviews = $6,
+        mastered = $7,
+        updated_at = NOW()
+    WHERE user_id = $8 AND vocab_id = $9
+    RETURNING *
+  `;
+  const updateVals = [newLevel, intervalDays, nextReviewAt, now, correctStreak, totalReviews, mastered, userId, vocabId];
+  const ur = await client.query(updateQ, updateVals);
+  return ur.rows[0];
+}
+
+/**
+ * GET /notebooks/:id/review-sequence
+ * require auth
+ * Return notebook vocab list + current index based on user_notebook_progress.current_word_id
+ */
+app.get('/notebooks/:id/review-sequence', authenticateToken, async (req, res) => {
+  const userId = Number(req.auth.userId);
+  const notebookId = Number(req.params.id);
+  if (!Number.isInteger(notebookId)) {
+    return res.status(400).json({ error: 'Invalid notebook id' });
+  }
+
+  try {
+    const vocabQ = `
+      SELECT v.id, v.word, v.meaning, v.phonetic, v.image_url
+      FROM notebook_vocab nv
+      JOIN vocabulary v ON v.id = nv.vocab_id
+      WHERE nv.notebook_id = $1
+      ORDER BY v.word, v.id
+    `;
+    const vocabRes = await pool.query(vocabQ, [notebookId]);
+    const vocabs = vocabRes.rows;
+    if (vocabs.length === 0) {
+      return res.json({ vocabs: [], currentIndex: 0, currentWordId: null });
+    }
+
+    const progressRes = await pool.query(
+      'SELECT current_word_id FROM user_notebook_progress WHERE user_id = $1 AND notebook_id = $2 LIMIT 1',
+      [userId, notebookId]
+    );
+
+    const currentWordId = progressRes.rowCount > 0 ? progressRes.rows[0].current_word_id : null;
+    let currentIndex = 0;
+
+    if (currentWordId !== null) {
+      const idx = vocabs.findIndex((v) => Number(v.id) === Number(currentWordId));
+      currentIndex = idx >= 0 ? idx : 0;
+    }
+
+    return res.json({ vocabs, currentIndex, currentWordId: currentWordId || null });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /notebooks/:id/review-step
+ * body: { vocab_id: number, result: 'correct' | 'wrong' }
+ * require auth
+ * Update vocab progress and advance notebook current_word_id to next vocab (wrap at end)
+ */
+app.post('/notebooks/:id/review-step', authenticateToken, async (req, res) => {
+  const userId = Number(req.auth.userId);
+  const notebookId = Number(req.params.id);
+  const vocabId = Number(req.body.vocab_id);
+  const result = req.body.result;
+
+  if (!Number.isInteger(notebookId) || !Number.isInteger(vocabId) || !['correct', 'wrong'].includes(result)) {
+    return res.status(400).json({ error: 'Invalid payload' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const sequenceRes = await client.query(
+      `
+      SELECT v.id
+      FROM notebook_vocab nv
+      JOIN vocabulary v ON v.id = nv.vocab_id
+      WHERE nv.notebook_id = $1
+      ORDER BY v.word, v.id
+      `,
+      [notebookId]
+    );
+    const sequence = sequenceRes.rows.map((r) => Number(r.id));
+    if (sequence.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Notebook has no vocabulary' });
+    }
+
+    const currentPos = sequence.indexOf(vocabId);
+    if (currentPos === -1) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Vocabulary is not in this notebook' });
+    }
+
+    const progress = await applyReviewResult(client, userId, vocabId, result);
+
+    const nextPos = (currentPos + 1) % sequence.length;
+    const nextWordId = sequence[nextPos];
+
+    await client.query(
+      `
+      INSERT INTO user_notebook_progress (user_id, notebook_id, current_word_id)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id, notebook_id)
+      DO UPDATE SET current_word_id = EXCLUDED.current_word_id
+      `,
+      [userId, notebookId, nextWordId]
+    );
+
+    await client.query('COMMIT');
+    return res.json({ progress, nextWordId, nextIndex: nextPos, totalWords: sequence.length });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+/**
  * POST /review
  * body: { vocab_id: number, result: 'correct' | 'wrong' }
  * require auth
@@ -327,88 +551,19 @@ app.get('/repetition/summary', authenticateToken, async (req, res) => {
  */
 app.post('/review', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
-  const { vocab_id: vocabId, result } = req.body;
+  const vocabId = Number(req.body.vocab_id);
+  const result = req.body.result;
 
   if (!Number.isInteger(vocabId) || !['correct', 'wrong'].includes(result)) {
     return res.status(400).json({ error: 'Invalid payload' });
   }
 
-  // interval mapping
-  const intervals = [1, 3, 7, 14, 30, 60];
-
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-
-    const getRes = await client.query('SELECT * FROM user_vocab_progress WHERE user_id = $1 AND vocab_id = $2 LIMIT 1', [userId, vocabId]);
-    let now = new Date();
-
-    if (getRes.rowCount === 0) {
-      // create initial record
-      if (result === 'correct') {
-        const repetition_level = 1;
-        const interval_days = intervals[repetition_level];
-        const next_review_at = new Date(now.getTime() + interval_days * 24 * 3600 * 1000);
-        const insertQ = `INSERT INTO user_vocab_progress
-          (user_id, vocab_id, repetition_level, interval_days, next_review_at, last_reviewed_at, correct_streak, total_reviews, mastered, created_at, updated_at)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())
-          RETURNING *`;
-        const insertVals = [userId, vocabId, repetition_level, interval_days, next_review_at, now, 1, 1, false];
-        const ins = await client.query(insertQ, insertVals);
-        await client.query('COMMIT');
-        return res.json({ progress: ins.rows[0] });
-      } else {
-        // wrong -> create at level 0, next day
-        const repetition_level = 0;
-        const interval_days = intervals[0];
-        const next_review_at = new Date(now.getTime() + interval_days * 24 * 3600 * 1000);
-        const insertQ = `INSERT INTO user_vocab_progress
-          (user_id, vocab_id, repetition_level, interval_days, next_review_at, last_reviewed_at, correct_streak, total_reviews, mastered, created_at, updated_at)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())
-          RETURNING *`;
-        const insertVals = [userId, vocabId, repetition_level, interval_days, next_review_at, now, 0, 1, false];
-        const ins = await client.query(insertQ, insertVals);
-        await client.query('COMMIT');
-        return res.json({ progress: ins.rows[0] });
-      }
-    } else {
-      const row = getRes.rows[0];
-      let newLevel = row.repetition_level || 0;
-      let interval_days = row.interval_days || 0;
-      let correct_streak = row.correct_streak || 0;
-      let total_reviews = (row.total_reviews || 0) + 1;
-      if (result === 'correct') {
-        newLevel = Math.min(newLevel + 1, intervals.length - 1);
-        interval_days = intervals[newLevel];
-        correct_streak = (correct_streak || 0) + 1;
-      } else {
-        newLevel = 0;
-        interval_days = intervals[0];
-        correct_streak = 0;
-      }
-
-      const next_review_at = new Date(now.getTime() + interval_days * 24 * 3600 * 1000);
-      // mark mastered true if level >= 4 (adjust as you wish)
-      const mastered = newLevel >= 4;
-
-      const updateQ = `
-        UPDATE user_vocab_progress
-        SET repetition_level = $1,
-            interval_days = $2,
-            next_review_at = $3,
-            last_reviewed_at = $4,
-            correct_streak = $5,
-            total_reviews = $6,
-            mastered = $7,
-            updated_at = NOW()
-        WHERE user_id = $8 AND vocab_id = $9
-        RETURNING *
-      `;
-      const updateVals = [newLevel, interval_days, next_review_at, now, correct_streak, total_reviews, mastered, userId, vocabId];
-      const ur = await client.query(updateQ, updateVals);
-      await client.query('COMMIT');
-      return res.json({ progress: ur.rows[0] });
-    }
+    const progress = await applyReviewResult(client, userId, vocabId, result);
+    await client.query('COMMIT');
+    return res.json({ progress });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);
