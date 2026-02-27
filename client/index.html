@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EnVocabLearner - Trang chủ</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="wrapper">
+    <header class="floating-nav">
+      <a class="brand" href="./index.html">EVL</a>
+
+      <nav class="menu" aria-label="Menu chính">
+        <a href="./index.html" class="active">Trang chủ</a>
+        <a href="./notebook/index.html">Sổ tay</a>
+        <span class="divider" aria-hidden="true"></span>
+        <button class="icon-btn" type="button" aria-label="Cài đặt">⚙</button>
+        <div id="auth-guest-actions" class="auth-actions">
+          <button id="open-login-btn" class="btn-outline" type="button">Đăng nhập</button>
+          <button id="open-register-btn" class="btn-primary" type="button">Đăng ký</button>
+        </div>
+        <div id="auth-user-actions" class="auth-actions hidden">
+          <button id="profile-btn" class="btn-outline" type="button" aria-label="Thông tin cá nhân"></button>
+          <button id="logout-btn" class="btn-outline" type="button">Đăng xuất</button>
+        </div>
+      </nav>
+    </header>
+
+    <main class="hero">
+      <section class="hero-main">
+        <h2>IELTS Vocabularies Learner</h2>
+        <p class="sub">Một giải pháp học tập từ vựng thông minh.</p>
+
+        <article class="feature">
+          <h2>Sử dụng phương pháp spaced repetition</h2>
+          <p>Ứng dụng sẽ nhắc bạn ôn lại từ đúng lúc bạn sắp quên, giúp ghi nhớ bền vứng mà không cần học dồn.</p>
+        </article>
+
+        <article class="feature">
+          <h2>Hệ thống sổ tay theo chủ đề</h2>
+          <p>Hơn 1000 từ vựng cần thiết được chia thành các sổ tay để bạn học theo mục tiêu cụ thể và theo dõi tiến độ rõ ràng.</p>
+        </article>
+      </section>
+
+      <aside class="hero-side" aria-label="Thông tin nhanh">
+        <div class="stat">
+          <strong>Hơn 1000+ từ vựng</strong>
+          <span>Tổng hợp các từ vựng quan trọng và thông dụng trong IELTS</span>
+        </div>
+        <div class="stat">
+          <strong>Spaced repetition</strong>
+          <span>Lộ trình ôn tập nhắc lại thông minh</span>
+        </div>
+        <div class="stat">
+          <strong>Giao diện đơn giản</strong>
+          <span>Các từ được chia rõ ràng vào các sổ tay riêng biệt</span>
+          <span>để dễ ôn tập và tra cứu.</span>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div id="auth-modal" class="auth-modal hidden" aria-hidden="true">
+    <div class="auth-modal-card">
+      <div class="auth-modal-head">
+        <h3 id="auth-title">Đăng nhập</h3>
+        <button id="close-auth-modal" class="icon-btn" type="button" aria-label="Đóng">x</button>
+      </div>
+      <form id="auth-form" class="auth-form">
+        <label id="auth-username-label" for="auth-username" class="hidden">Username</label>
+        <input id="auth-username" name="username" type="text" minlength="3" maxlength="30" class="hidden" />
+        <label for="auth-email">Email</label>
+        <input id="auth-email" name="email" type="email" required />
+        <label for="auth-password">Mật khẩu</label>
+        <input id="auth-password" name="password" type="password" minlength="8" required />
+        <p id="auth-status" class="auth-status"></p>
+        <button id="auth-submit" class="btn-primary auth-submit" type="submit">Đăng nhập</button>
+      </form>
+      <button id="switch-auth-mode" class="auth-switch" type="button"></button>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
+

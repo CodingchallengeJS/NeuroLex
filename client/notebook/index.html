@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EnVocabLearner - Sổ tay</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="wrapper">
+    <header class="floating-nav">
+      <a class="brand" href="../index.html">EVL</a>
+
+      <nav class="menu" aria-label="Menu chính">
+        <a href="../index.html">Trang chủ</a>
+        <a href="./index.html" class="active">Sổ tay</a>
+        <span class="divider" aria-hidden="true"></span>
+        <button class="icon-btn" type="button" aria-label="Cài đặt">⚙</button>
+        <div id="auth-guest-actions" class="auth-actions">
+          <button id="open-login-btn" class="btn-outline" type="button">Đăng nhập</button>
+          <button id="open-register-btn" class="btn-primary" type="button">Đăng ký</button>
+        </div>
+        <div id="auth-user-actions" class="auth-actions hidden">
+          <button id="profile-btn" class="btn-outline" type="button" aria-label="Thông tin cá nhân"></button>
+          <button id="logout-btn" class="btn-outline" type="button">Đăng xuất</button>
+        </div>
+      </nav>
+    </header>
+
+    <main class="notebook-layout">
+      <section class="notebook-left">
+        <div class="notebook-header">
+          <div class="notebook-header-top">
+            <h1 id="notebook-title">Sổ tay của bạn</h1>
+            <button id="review-now-btn" class="btn-primary">Ôn tập hôm nay</button>
+          </div>
+
+          <div id="notebook-grid" class="notebook-grid" aria-live="polite">
+            <!-- notebook cards injected here -->
+          </div>
+        </div>
+
+        <div id="notebook-detail" class="notebook-detail hidden">
+          <div class="notebook-detail-head">
+            <h2 id="selected-notebook-title"></h2>
+            <input id="search-input" placeholder="Tìm kiếm từ..." />
+          </div>
+          <div class="vocab-list" id="vocab-list" aria-live="polite">
+            <!-- vocab cards injected here -->
+          </div>
+        </div>
+      </section>
+
+      <aside class="notebook-right">
+        <div class="sr-card">
+          <h2>Spaced Repetition</h2>
+
+          <div id="sr-summary">
+            <div class="sr-item">
+              <span>Ôn tập ngay</span>
+              <strong id="sr-now">0</strong>
+            </div>
+            <div class="sr-item">
+              <span>Ngày mai</span>
+              <strong id="sr-1">0</strong>
+            </div>
+            <div class="sr-item">
+              <span>3 ngày</span>
+              <strong id="sr-3">0</strong>
+            </div>
+            <div class="sr-item">
+              <span>7 ngày</span>
+              <strong id="sr-7">0</strong>
+            </div>
+            <div class="sr-item">
+              <span>14 ngày</span>
+              <strong id="sr-14">0</strong>
+            </div>
+            <div class="sr-item">
+              <span>Nhớ sâu</span>
+              <strong id="sr-mastered">0</strong>
+            </div>
+          </div>
+
+          <button id="start-review-btn" class="btn-primary full-width">Bắt đầu ôn tập</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- review modal simple -->
+  <div id="review-modal" class="auth-modal hidden" aria-hidden="true">
+    <div class="auth-modal-card" style="max-width:680px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 id="review-word">Từ</h3>
+        <button id="close-review" class="icon-btn">x</button>
+      </div>
+
+      <div id="review-card" style="padding:16px;border-radius:12px;border:1px solid var(--line);background:rgba(7,19,41,0.7);min-height:140px;">
+        <div id="review-phonetic" style="color:var(--accent)"></div>
+        <div id="review-meaning" style="margin-top:10px;color:var(--text-soft)"></div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <button id="btn-show-meaning" class="btn-outline">Hiện nghĩa</button>
+        <div style="flex:1"></div>
+        <button id="btn-wrong" class="btn-outline">Sai</button>
+        <button id="btn-correct" class="btn-primary">Đúng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- reuse auth modal -->
+  <div id="auth-modal" class="auth-modal hidden" aria-hidden="true">
+    <div class="auth-modal-card">
+      <div class="auth-modal-head">
+        <h3 id="auth-title">Đăng nhập</h3>
+        <button id="close-auth-modal" class="icon-btn" type="button" aria-label="Đóng">x</button>
+      </div>
+      <form id="auth-form" class="auth-form">
+        <label id="auth-username-label" for="auth-username" class="hidden">Username</label>
+        <input id="auth-username" name="username" type="text" minlength="3" maxlength="30" class="hidden" />
+        <label for="auth-email">Email</label>
+        <input id="auth-email" name="email" type="email" required />
+        <label for="auth-password">Mật khẩu</label>
+        <input id="auth-password" name="password" type="password" minlength="8" required />
+        <p id="auth-status" class="auth-status"></p>
+        <button id="auth-submit" class="btn-primary auth-submit" type="submit">Đăng nhập</button>
+      </form>
+      <button id="switch-auth-mode" class="auth-switch" type="button"></button>
+    </div>
+  </div>
+
+  <script src="../script.js"></script>
+  <script src="./main.js"></script>
+</body>
+</html>
