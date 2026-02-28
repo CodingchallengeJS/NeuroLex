@@ -1,5 +1,5 @@
 ﻿(function () {
-  const API_BASE_URL = 'https://neurolex-production.up.railway.app';
+  const API_BASE_URL = 'http://localhost:8000';
   const TOKEN_KEY = 'evl_access_token';
 
   const guestActions = document.getElementById('auth-guest-actions');

@@ -1,6 +1,6 @@
 // client/notebook/main.js
 (function () {
-  const API_BASE_URL = window.__EVL_API_BASE__ || 'https://neurolex-production.up.railway.app';
+  const API_BASE_URL = window.__EVL_API_BASE__ || 'http://localhost:8000';
   const TOKEN_KEY = 'evl_access_token';
 
   const notebookTitle = document.getElementById('notebook-title');
@@ -35,6 +35,14 @@
   const reviewActionsEl = document.getElementById('review-actions');
   const btnWrong = document.getElementById('btn-wrong');
   const btnCorrect = document.getElementById('btn-correct');
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsModal = document.getElementById('settings-modal');
+  const closeSettingsModalBtn = document.getElementById('close-settings-modal');
+  const themeOptionButtons = Array.from(document.querySelectorAll('.theme-option'));
+  const THEME_MODE_KEY = 'evl_theme_mode';
+  const systemThemeMedia = window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
 
   let notebooks = [];
   let currentNotebookId = null;
@@ -45,6 +53,51 @@
   let reviewMode = 'sequence'; // 'sequence' | 'single' | 'bucket'
   let reviewBucketLabel = '';
   let meaningRevealed = false;
+  let themeMode = 'system';
+
+  function getSavedThemeMode() {
+    const saved = localStorage.getItem(THEME_MODE_KEY);
+    if (saved === 'light' || saved === 'dark' || saved === 'system') {
+      return saved;
+    }
+    return 'system';
+  }
+
+  function getSystemTheme() {
+    return systemThemeMedia && systemThemeMedia.matches ? 'dark' : 'light';
+  }
+
+  function setThemeOptionActive(mode) {
+    themeOptionButtons.forEach((btn) => {
+      const isActive = btn.dataset.themeMode === mode;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+  }
+
+  function applyThemeMode(mode) {
+    const resolvedMode = mode === 'system' ? getSystemTheme() : mode;
+    document.documentElement.setAttribute('data-theme', resolvedMode);
+    themeMode = mode;
+    setThemeOptionActive(mode);
+  }
+
+  function saveAndApplyThemeMode(mode) {
+    localStorage.setItem(THEME_MODE_KEY, mode);
+    applyThemeMode(mode);
+  }
+
+  function openSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.classList.remove('hidden');
+    settingsModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.classList.add('hidden');
+    settingsModal.setAttribute('aria-hidden', 'true');
+  }
 
   function getToken() {
     return localStorage.getItem(TOKEN_KEY);
@@ -408,6 +461,42 @@
   closeReview.addEventListener('click', closeReviewModal);
   btnCorrect.addEventListener('click', () => submitReview('correct'));
   btnWrong.addEventListener('click', () => submitReview('wrong'));
+  settingsBtn.addEventListener('click', openSettingsModal);
+  closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
+
+  settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) {
+      closeSettingsModal();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    closeSettingsModal();
+  });
+
+  themeOptionButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.themeMode;
+      if (mode === 'light' || mode === 'dark' || mode === 'system') {
+        saveAndApplyThemeMode(mode);
+      }
+    });
+  });
+
+  if (systemThemeMedia) {
+    const onSystemThemeChanged = () => {
+      if (themeMode === 'system') {
+        applyThemeMode('system');
+      }
+    };
+
+    if (typeof systemThemeMedia.addEventListener === 'function') {
+      systemThemeMedia.addEventListener('change', onSystemThemeChanged);
+    } else if (typeof systemThemeMedia.addListener === 'function') {
+      systemThemeMedia.addListener(onSystemThemeChanged);
+    }
+  }
 
   startReviewBtn.addEventListener('click', async () => {
     try {
@@ -435,6 +524,7 @@
 
   (async function init() {
     try {
+      applyThemeMode(getSavedThemeMode());
       await loadNotebooks();
       await loadSRSummary();
     } catch (err) {

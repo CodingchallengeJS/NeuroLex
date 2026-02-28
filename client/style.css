@@ -2,12 +2,42 @@
   --bg: #050914;
   --bg-soft: rgba(8, 18, 38, 0.72);
   --card: rgba(12, 29, 63, 0.74);
+  --surface-strong: rgba(7, 19, 41, 0.72);
+  --surface-soft: rgba(7, 19, 41, 0.62);
+  --surface-hover: rgba(11, 30, 64, 0.78);
+  --surface-elevated: rgba(14, 39, 80, 0.9);
+  --active-card-end: rgba(7, 19, 41, 0.9);
+  --input-bg: rgba(4, 14, 32, 0.95);
+  --card-border-soft: rgba(142, 180, 255, 0.2);
+  --card-border-strong: rgba(142, 180, 255, 0.35);
+  --muted-strong: #95b5e8;
   --line: rgba(125, 181, 255, 0.22);
   --text: #e8f3ff;
   --text-soft: #95a8c8;
   --primary: #4ea3ff;
   --primary-strong: #2f86f5;
   --accent: #6ec8ff;
+}
+
+:root[data-theme="light"] {
+  --bg: #edf4ff;
+  --bg-soft: rgba(255, 255, 255, 0.82);
+  --card: rgba(255, 255, 255, 0.86);
+  --surface-strong: #f8fbff;
+  --surface-soft: #f4f8ff;
+  --surface-hover: #eaf2ff;
+  --surface-elevated: #eef5ff;
+  --active-card-end: #d9e8ff;
+  --input-bg: #ffffff;
+  --card-border-soft: rgba(46, 112, 201, 0.2);
+  --card-border-strong: rgba(46, 112, 201, 0.35);
+  --muted-strong: #46658d;
+  --line: rgba(46, 112, 201, 0.24);
+  --text: #10233f;
+  --text-soft: #516888;
+  --primary: #2f86f5;
+  --primary-strong: #1d6fd8;
+  --accent: #1767c3;
 }
 
 * {
@@ -115,6 +145,10 @@ body {
   justify-content: center;
   font-size: 1.1rem;
   padding: 0;
+}
+
+#settings-btn i {
+  pointer-events: none;
 }
 
 .btn-outline,
@@ -254,6 +288,49 @@ body {
   padding: 18px;
 }
 
+.settings-modal-card {
+  width: min(380px, 100%);
+}
+
+.settings-body {
+  margin-top: 8px;
+}
+
+.settings-label {
+  margin-bottom: 10px;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.theme-segmented {
+  display: inline-flex;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(7, 19, 41, 0.38);
+}
+
+.theme-option {
+  flex: 1;
+  border: none;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 10px 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.theme-option:last-child {
+  border-right: none;
+}
+
+.theme-option.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  color: #fff;
+}
+
 .auth-modal-head {
   display: flex;
   align-items: center;
@@ -370,7 +447,7 @@ body {
 .notebook-item-card {
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(7, 19, 41, 0.62);
+  background: var(--surface-soft);
   color: var(--text);
   text-align: left;
   padding: 14px;
@@ -381,12 +458,12 @@ body {
 .notebook-item-card:hover {
   transform: translateY(-3px);
   border-color: rgba(110, 200, 255, 0.45);
-  background: rgba(12, 34, 68, 0.74);
+  background: var(--surface-hover);
 }
 
 .notebook-item-card.active {
   border-color: rgba(110, 200, 255, 0.7);
-  background: linear-gradient(160deg, rgba(78, 163, 255, 0.28), rgba(7, 19, 41, 0.9));
+  background: linear-gradient(160deg, rgba(78, 163, 255, 0.28), var(--active-card-end));
 }
 
 .notebook-item-title {
@@ -425,7 +502,7 @@ body {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: rgba(4, 14, 32, 0.95);
+  background: var(--input-bg);
   color: var(--text);
 }
 
@@ -444,15 +521,15 @@ body {
   justify-content: space-between;
   padding: 18px;
   border-radius: 16px;
-  border: 1px solid rgba(142, 180, 255, 0.2);
-  background: rgba(7, 19, 41, 0.72);
-  color: #e7f0ff;
+  border: 1px solid var(--card-border-soft);
+  background: var(--surface-strong);
+  color: var(--text);
   transition: transform .14s ease, background .14s ease;
 }
 
 .vocab-card:hover {
   transform: translateY(-4px);
-  background: rgba(10, 28, 58, 0.86);
+  background: var(--surface-hover);
 }
 
 .vocab-card-main h3 {
@@ -462,7 +539,7 @@ body {
 
 .vocab-card-phonetic {
   margin-top: 10px;
-  color: #9dbdf0;
+  color: var(--text-soft);
   font-style: italic;
   font-size: 1.15rem;
 }
@@ -471,7 +548,7 @@ body {
   margin-top: 12px;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #d8e7ff;
+  color: var(--text);
 }
 
 .vocab-card-actions {
@@ -484,7 +561,7 @@ body {
 
 .vocab-card-level {
   font-size: 0.9rem;
-  color: #95b5e8;
+  color: var(--muted-strong);
 }
 
 .vocab-card-buttons {
@@ -493,17 +570,17 @@ body {
 }
 
 .vocab-card .btn-outline {
-  color: #e7f0ff;
-  border-color: rgba(142, 180, 255, 0.35);
-  background: rgba(14, 39, 80, 0.9);
+  color: var(--text);
+  border-color: var(--card-border-strong);
+  background: var(--surface-elevated);
 }
 
 .vocab-card .audio-btn {
-  color: #e7f0ff;
-  border: 1px solid rgba(142, 180, 255, 0.35);
+  color: var(--text);
+  border: 1px solid var(--card-border-strong);
   border-radius: 12px;
   padding: 8px 10px;
-  background: rgba(14, 39, 80, 0.9);
+  background: var(--surface-elevated);
   cursor: pointer;
 }
 
@@ -520,7 +597,7 @@ body {
   justify-content: space-between;
   padding: 10px;
   border-radius: 12px;
-  background: rgba(7, 19, 41, 0.6);
+  background: var(--surface-soft);
   margin-bottom: 8px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -528,8 +605,8 @@ body {
 }
 
 .sr-item:hover {
-  background: rgba(11, 30, 64, 0.78);
-  border-color: rgba(142, 180, 255, 0.35);
+  background: var(--surface-hover);
+  border-color: var(--card-border-strong);
   transform: translateY(-1px);
 }
 
