@@ -1,5 +1,5 @@
 ﻿(function () {
-  const API_BASE_URL = 'http://localhost:8000';
+  const API_BASE_URL = 'https://neurolex-production.up.railway.app';
   const TOKEN_KEY = 'evl_access_token';
 
   const guestActions = document.getElementById('auth-guest-actions');
@@ -20,8 +20,62 @@
   const authSubmitBtn = document.getElementById('auth-submit');
   const switchAuthModeBtn = document.getElementById('switch-auth-mode');
   const authStatus = document.getElementById('auth-status');
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsModal = document.getElementById('settings-modal');
+  const closeSettingsModalBtn = document.getElementById('close-settings-modal');
+  const themeOptionButtons = Array.from(document.querySelectorAll('.theme-option'));
+
+  const THEME_MODE_KEY = 'evl_theme_mode';
+  const systemThemeMedia = window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
 
   let currentMode = 'login';
+  let themeMode = 'system';
+
+  function getSavedThemeMode() {
+    const saved = localStorage.getItem(THEME_MODE_KEY);
+    if (saved === 'light' || saved === 'dark' || saved === 'system') {
+      return saved;
+    }
+    return 'system';
+  }
+
+  function getSystemTheme() {
+    return systemThemeMedia && systemThemeMedia.matches ? 'dark' : 'light';
+  }
+
+  function setThemeOptionActive(mode) {
+    themeOptionButtons.forEach((btn) => {
+      const isActive = btn.dataset.themeMode === mode;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+  }
+
+  function applyThemeMode(mode) {
+    const resolvedMode = mode === 'system' ? getSystemTheme() : mode;
+    document.documentElement.setAttribute('data-theme', resolvedMode);
+    themeMode = mode;
+    setThemeOptionActive(mode);
+  }
+
+  function saveAndApplyThemeMode(mode) {
+    localStorage.setItem(THEME_MODE_KEY, mode);
+    applyThemeMode(mode);
+  }
+
+  function openSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.classList.remove('hidden');
+    settingsModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.classList.add('hidden');
+    settingsModal.setAttribute('aria-hidden', 'true');
+  }
 
   function setAuthStatus(message, type) {
     if (!authStatus) return;
@@ -188,6 +242,45 @@
     setGuestState();
   });
 
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', openSettingsModal);
+  }
+
+  if (closeSettingsModalBtn) {
+    closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
+  }
+
+  if (settingsModal) {
+    settingsModal.addEventListener('click', function (event) {
+      if (event.target === settingsModal) {
+        closeSettingsModal();
+      }
+    });
+  }
+
+  themeOptionButtons.forEach((btn) => {
+    btn.addEventListener('click', function () {
+      const mode = btn.dataset.themeMode;
+      if (mode === 'light' || mode === 'dark' || mode === 'system') {
+        saveAndApplyThemeMode(mode);
+      }
+    });
+  });
+
+  if (systemThemeMedia) {
+    const onSystemThemeChanged = function () {
+      if (themeMode === 'system') {
+        applyThemeMode('system');
+      }
+    };
+
+    if (typeof systemThemeMedia.addEventListener === 'function') {
+      systemThemeMedia.addEventListener('change', onSystemThemeChanged);
+    } else if (typeof systemThemeMedia.addListener === 'function') {
+      systemThemeMedia.addListener(onSystemThemeChanged);
+    }
+  }
+
   authModal.addEventListener('click', function (event) {
     if (event.target === authModal) {
       closeAuthModal();
@@ -196,11 +289,13 @@
 
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
+      closeSettingsModal();
       closeAuthModal();
     }
   });
 
   authForm.addEventListener('submit', handleAuthSubmit);
 
+  applyThemeMode(getSavedThemeMode());
   fetchMeAndRender();
 })();

@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NeuroLex - Trang chủ</title>
   <link rel="stylesheet" href="./style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
 </head>
 <body>
   <div class="wrapper">
@@ -15,7 +19,9 @@
         <a href="./index.html" class="active">Trang chủ</a>
         <a href="./notebook/index.html">Sổ tay</a>
         <span class="divider" aria-hidden="true"></span>
-        <button class="icon-btn" type="button" aria-label="Cài đặt">⚙</button>
+        <button id="settings-btn" class="icon-btn" type="button" aria-label="Cài đặt">
+          <i class="fa-solid fa-gear" aria-hidden="true"></i>
+        </button>
         <div id="auth-guest-actions" class="auth-actions">
           <button id="open-login-btn" class="btn-outline" type="button">Đăng nhập</button>
           <button id="open-register-btn" class="btn-primary" type="button">Đăng ký</button>
@@ -61,6 +67,23 @@
     </main>
   </div>
 
+  <div id="settings-modal" class="auth-modal hidden" aria-hidden="true">
+    <div class="auth-modal-card settings-modal-card">
+      <div class="auth-modal-head">
+        <h3>Cài đặt giao diện</h3>
+        <button id="close-settings-modal" class="icon-btn" type="button" aria-label="Đóng">x</button>
+      </div>
+      <div class="settings-body">
+        <p class="settings-label">Chế độ màu</p>
+        <div id="theme-segmented" class="theme-segmented" role="group" aria-label="Chọn chế độ màu">
+          <button class="theme-option" type="button" data-theme-mode="light" aria-pressed="false">Light</button>
+          <button class="theme-option" type="button" data-theme-mode="dark" aria-pressed="false">Dark</button>
+          <button class="theme-option" type="button" data-theme-mode="system" aria-pressed="false">System</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="auth-modal" class="auth-modal hidden" aria-hidden="true">
     <div class="auth-modal-card">
       <div class="auth-modal-head">
@@ -84,4 +107,3 @@
   <script src="./script.js"></script>
 </body>
 </html>
-
