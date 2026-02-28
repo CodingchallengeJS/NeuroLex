@@ -1,6 +1,6 @@
 // client/notebook/main.js
 (function () {
-  const API_BASE_URL = window.__EVL_API_BASE__ || 'http://localhost:8000';
+  const API_BASE_URL = window.__EVL_API_BASE__ || 'https://neurolex-production.up.railway.app';
   const TOKEN_KEY = 'evl_access_token';
 
   const notebookTitle = document.getElementById('notebook-title');
