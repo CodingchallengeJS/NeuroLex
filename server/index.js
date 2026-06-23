@@ -42,6 +42,11 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
+const vocabularySelectFields = `
+  v.id, v.word, v.meaning, v.phonetic, v.image_url,
+  v.english_meaning, v.vietnamese_meaning, v.synonyms
+`;
+
 function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -272,14 +277,14 @@ app.get('/notebooks/:id/vocabs', async (req, res) => {
 
   try {
     const q = `
-      SELECT v.id, v.word, v.meaning, v.phonetic, v.image_url,
+      SELECT ${vocabularySelectFields},
         uvp.repetition_level, uvp.interval_days, uvp.next_review_at, uvp.correct_streak, uvp.mastered
       FROM notebook_vocab nv
       JOIN vocabulary v ON v.id = nv.vocab_id
       LEFT JOIN user_vocab_progress uvp
         ON uvp.vocab_id = v.id AND ($1::BIGINT IS NOT NULL AND uvp.user_id = $1 OR $1::BIGINT IS NULL AND false)
       WHERE nv.notebook_id = $2
-      ORDER BY v.word
+      ORDER BY nv.sort_order NULLS LAST, v.word, v.id
     `;
     const vals = [userId, notebookId];
     const r = await pool.query(q, vals);
@@ -300,14 +305,14 @@ app.get('/repetition/summary', authenticateToken, async (req, res) => {
   try {
     const q = `
       SELECT
-        SUM((next_review_at <= now())::int) AS due_now,
-        SUM((date(next_review_at) = date(now() + INTERVAL '1 day'))::int) AS due_1,
-        SUM((date(next_review_at) = date(now() + INTERVAL '3 day'))::int) AS due_3,
-        SUM((date(next_review_at) = date(now() + INTERVAL '7 day'))::int) AS due_7,
-        SUM((date(next_review_at) = date(now() + INTERVAL '14 day'))::int) AS due_14,
-        SUM((mastered)::int) AS mastered
+          SUM((next_review_at <= now())::int) AS due_now,
+          SUM((next_review_at > now() AND next_review_at <= now() + INTERVAL '1 day')::int) AS due_1,
+          SUM((next_review_at > now() + INTERVAL '1 day' AND next_review_at <= now() + INTERVAL '3 days')::int) AS due_3,
+          SUM((next_review_at > now() + INTERVAL '3 days' AND next_review_at <= now() + INTERVAL '7 days')::int) AS due_7,
+          SUM((next_review_at > now() + INTERVAL '7 days' AND next_review_at <= now() + INTERVAL '14 days')::int) AS due_14,
+          SUM((mastered)::int) AS mastered
       FROM user_vocab_progress
-      WHERE user_id = $1
+      WHERE user_id = $1;
     `;
     const r = await pool.query(q, [userId]);
     res.json(r.rows[0]);
@@ -325,12 +330,20 @@ app.get('/repetition/summary', authenticateToken, async (req, res) => {
 app.get('/repetition/items', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
   const bucket = String(req.query.bucket || '');
+  // const conditions = {
+  //   due_now: 'uvp.next_review_at <= now()',
+  //   due_1: "date(uvp.next_review_at) = date(now() + INTERVAL '1 day')",
+  //   due_3: "date(uvp.next_review_at) = date(now() + INTERVAL '3 day')",
+  //   due_7: "date(uvp.next_review_at) = date(now() + INTERVAL '7 day')",
+  //   due_14: "date(uvp.next_review_at) = date(now() + INTERVAL '14 day')",
+  //   mastered: 'uvp.mastered = TRUE'
+  // };
   const conditions = {
     due_now: 'uvp.next_review_at <= now()',
-    due_1: "date(uvp.next_review_at) = date(now() + INTERVAL '1 day')",
-    due_3: "date(uvp.next_review_at) = date(now() + INTERVAL '3 day')",
-    due_7: "date(uvp.next_review_at) = date(now() + INTERVAL '7 day')",
-    due_14: "date(uvp.next_review_at) = date(now() + INTERVAL '14 day')",
+    due_1: "uvp.next_review_at > now() AND uvp.next_review_at <= now() + INTERVAL '1 day'",
+    due_3: "uvp.next_review_at > now() + INTERVAL '1 day' AND uvp.next_review_at <= now() + INTERVAL '3 days'",
+    due_7: "uvp.next_review_at > now() + INTERVAL '3 days' AND uvp.next_review_at <= now() + INTERVAL '7 days'",
+    due_14: "uvp.next_review_at > now() + INTERVAL '7 days' AND uvp.next_review_at <= now() + INTERVAL '14 days'",
     mastered: 'uvp.mastered = TRUE'
   };
 
@@ -342,7 +355,7 @@ app.get('/repetition/items', authenticateToken, async (req, res) => {
   try {
     const q = `
       SELECT
-        v.id, v.word, v.meaning, v.phonetic, v.image_url,
+        ${vocabularySelectFields},
         uvp.repetition_level, uvp.interval_days, uvp.next_review_at, uvp.correct_streak, uvp.mastered
       FROM user_vocab_progress uvp
       JOIN vocabulary v ON v.id = uvp.vocab_id
@@ -441,11 +454,11 @@ app.get('/notebooks/:id/review-sequence', authenticateToken, async (req, res) =>
 
   try {
     const vocabQ = `
-      SELECT v.id, v.word, v.meaning, v.phonetic, v.image_url
+      SELECT ${vocabularySelectFields}
       FROM notebook_vocab nv
       JOIN vocabulary v ON v.id = nv.vocab_id
       WHERE nv.notebook_id = $1
-      ORDER BY v.word, v.id
+      ORDER BY nv.sort_order NULLS LAST, v.word, v.id
     `;
     const vocabRes = await pool.query(vocabQ, [notebookId]);
     const vocabs = vocabRes.rows;
@@ -499,7 +512,7 @@ app.post('/notebooks/:id/review-step', authenticateToken, async (req, res) => {
       FROM notebook_vocab nv
       JOIN vocabulary v ON v.id = nv.vocab_id
       WHERE nv.notebook_id = $1
-      ORDER BY v.word, v.id
+      ORDER BY nv.sort_order NULLS LAST, v.word, v.id
       `,
       [notebookId]
     );

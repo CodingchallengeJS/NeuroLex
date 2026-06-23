@@ -84,3 +84,11 @@ Bạn cũng có thể dùng một web tĩnh đơn giản
 ```bash
 npx http-server client -p 8080
 ```
+
+### Vocabulary data update
+
+`node import_vocab.js` now imports both `server/vocabularies.json` and
+`server/va-c1c2-500-2023-2026.csv`. The CSV is added as the notebook
+`SAT C1-C2 500 (2023-2026)` and fills the detailed fields
+`english_meaning`, `vietnamese_meaning`, and `synonyms`. Its CSV `id`
+column is used as the notebook order, from highest frequency to lowest.

@@ -521,10 +521,11 @@ body {
 }
 
 .vocab-card {
-  min-height: 190px;
+  min-height: 245px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 16px;
   padding: 18px;
   border-radius: 16px;
   border: 1px solid var(--card-border-soft);
@@ -541,6 +542,7 @@ body {
 .vocab-card-main h3 {
   font-size: 1.95rem;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .vocab-card-phonetic {
@@ -552,9 +554,52 @@ body {
 
 .vocab-card-meaning {
   margin-top: 12px;
-  font-size: 1.1rem;
-  font-weight: 700;
+  display: grid;
+  gap: 8px;
+  font-size: 0.98rem;
+  font-weight: 500;
   color: var(--text);
+}
+
+.meaning-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  line-height: 1.4;
+}
+
+.meaning-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--accent);
+  background: rgba(78, 163, 255, 0.1);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.vocab-card-synonyms,
+.review-synonyms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.synonym-chip {
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--muted-strong);
+  background: rgba(78, 163, 255, 0.08);
+  font-size: 0.82rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .vocab-card-actions {
@@ -573,6 +618,7 @@ body {
 .vocab-card-buttons {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .vocab-card .btn-outline {
@@ -582,12 +628,18 @@ body {
 }
 
 .vocab-card .audio-btn {
+  min-width: 40px;
   color: var(--text);
   border: 1px solid var(--card-border-strong);
   border-radius: 12px;
   padding: 8px 10px;
   background: var(--surface-elevated);
   cursor: pointer;
+}
+
+.review-detail-stack {
+  display: grid;
+  gap: 8px;
 }
 
 .empty-state {

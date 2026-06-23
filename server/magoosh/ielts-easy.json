@@ -1,0 +1,435 @@
+{
+    "consequence": {
+        "meanings": [
+            "noun: result; effect; what happens because of an event"
+        ],
+        "examples": [
+            "If you hurt the people around you, there will be unwanted consequences."
+        ]
+    },
+    "region": {
+        "meanings": [
+            "noun: an area of land"
+        ],
+        "examples": [
+            "Although most of the Japanese exchange students come from Osaka, in the south, Akiko comes from Sapporo, in the northern region of Japan."
+        ]
+    },
+    "major": {
+        "meanings": [
+            "adjective: very important, or large in size"
+        ],
+        "examples": [
+            "The exam score is a major part of the final class grade."
+        ]
+    },
+    "assist": {
+        "meanings": [
+            "verb: to help or aid"
+        ],
+        "examples": [
+            "The box was too big to carry, so John asked the store manager to assist him."
+        ]
+    },
+    "focus": {
+        "meanings": [
+            "verb: to look at; to think about; to give attention to",
+            "noun: the center of attention; the most important part"
+        ],
+        "examples": [
+            "I could not focus on my homework in the library because someone was playing music very loudly.",
+            "The focus of Justin's essay was not clear to the professor, so he received a low grade."
+        ]
+    },
+    "previous": {
+        "meanings": [
+            "adjective: happening before the one happening now (of a thing, event, or date)"
+        ],
+        "examples": [
+            "Soojin thought her science class was really hard after studying only literature in the previous year."
+        ]
+    },
+    "maximize": {
+        "meanings": [
+            "verb: to make as big as possible; to use or do as completely as possible"
+        ],
+        "examples": [
+            "In order to maximize the number of people that can fit on the plane, the airline took out the restrooms."
+        ]
+    },
+    "specify": {
+        "meanings": [
+            "verb: to say which one or clearly point to which one"
+        ],
+        "examples": [
+            "The king told the hero that he could marry one of the princesses but did not specify which one."
+        ]
+    },
+    "evaluate": {
+        "meanings": [
+            "verb: to form an idea of the amount, number, or value of something"
+        ],
+        "examples": [
+            "Students are evaluated by their grades on tests, homework, essays, and in-class interaction."
+        ]
+    },
+    "contact": {
+        "meanings": [
+            "noun: the state of touching",
+            "noun: having possible or normal communication",
+            "verb: communicating (as by email or phone especially) to give or get specific information"
+        ],
+        "examples": [
+            "An electrical wire in contact with a pool of water can be extremely dangerous.",
+            "Liam is still in contact with many of his high-school teachers, surprisingly.",
+            "The woman at the help desk told me to contact the student affairs office if I want to change rooms."
+        ]
+    },
+    "relevant": {
+        "meanings": [
+            "adjective: closely connected to the topic and therefore important"
+        ],
+        "examples": [
+            "I think Professor McGarry can give you some relevant books to help you write that essay."
+        ]
+    },
+    "imply": {
+        "meanings": [
+            "verb: to communicate without saying specifically; to lead to (a conclusion)"
+        ],
+        "examples": [
+            "The president implied that he would not support the new law against selling tobacco, but he didn't say it clearly."
+        ]
+    },
+    "minor": {
+        "meanings": [
+            "adjective: not very important; small in size"
+        ],
+        "examples": [
+            "The old actress was sad she had only a minor role in the new movie."
+        ]
+    },
+    "reject": {
+        "meanings": [
+            "verb: to say no to something offered; to refuse or decline"
+        ],
+        "examples": [
+            "After applying to ten schools, Lucas was rejected by nine of them."
+        ]
+    },
+    "mental": {
+        "meanings": [
+            "adjective: of the mind"
+        ],
+        "examples": [
+            "Many mental problems are still not well understood. We often don't know what causes them nor how to stop them from happening."
+        ]
+    },
+    "rely": {
+        "meanings": [
+            "verb: to depend on; to need in order to continue well"
+        ],
+        "examples": [
+            "In many countries, children rely on their parents for food, money, and housing until they are over 20 years old."
+        ]
+    },
+    "transfer": {
+        "meanings": [
+            "verb: to pass from one person or thing to another"
+        ],
+        "examples": [
+            "Sally transferred all of her money from American National Bank when she heard they were closing."
+        ]
+    },
+    "period": {
+        "meanings": [
+            "noun: a range or amount of time"
+        ],
+        "examples": [
+            "Computer technology changed a lot in the period between 1980 and 2000."
+        ]
+    },
+    "occupy": {
+        "meanings": [
+            "verb: to be in or on a space; to fill a space"
+        ],
+        "examples": [
+            "The dentist's office occupied the entire fourth floor of the building."
+        ]
+    },
+    "strategy": {
+        "meanings": [
+            "noun: a plan of action to reach a desired goal"
+        ],
+        "examples": [
+            "The debate team spent the evening discussing their strategy for defeating the other team"
+        ]
+    },
+    "obvious": {
+        "meanings": [
+            "adjective: easily understood or seen"
+        ],
+        "examples": [
+            "The results of the election were so obvious that the loser admitted defeat before voting was finished."
+        ]
+    },
+    "comment": {
+        "meanings": [
+            "noun: an observation, note, or response",
+            "verb: to say a short response or opinion about a given topic"
+        ],
+        "examples": [
+            "The professor was angry about the negative comments made about his teaching style.",
+            "A smart politician, the prime minister refused to comment on the criticisms of her newest budget plan."
+        ]
+    },
+    "access": {
+        "meanings": [
+            "noun: the ability to go into (when somebody or something must allow you to enter)",
+            "verb: to go into; to reach (when able to or allowed to enter)"
+        ],
+        "examples": [
+            "Only students have access to the university library.",
+            "There is a large amount of oil under the ice, but we can't access it."
+        ]
+    },
+    "expand": {
+        "meanings": [
+            "verb: to make larger; to give more detail on a subject"
+        ],
+        "examples": [
+            "Blowing air into a balloon will cause it to expand, but if you blow too much air, it will explode!"
+        ]
+    },
+    "section": {
+        "meanings": [
+            "noun: one of a number of pieces which come together to create a whole"
+        ],
+        "examples": [
+            "Every ant's body has three sections: a head, a thorax (where the legs are), and an abdomen (the back)."
+        ]
+    },
+    "primary": {
+        "meanings": [
+            "noun: first in importance"
+        ],
+        "examples": [
+            "The primary cause of unhappiness is not about money—it is bad health."
+        ]
+    },
+    "available": {
+        "meanings": [
+            "adjective: able to be reached, used, or bought"
+        ],
+        "examples": [
+            "The advisor was not available to meet all day Monday, so the student had to come back on Tuesday."
+        ]
+    },
+    "circumstance": {
+        "meanings": [
+            "noun: the situation; facts or environment around an event"
+        ],
+        "examples": [
+            "My professor only gives extra time to finish essays under special circumstances. Normally it's not allowed."
+        ]
+    },
+    "respond": {
+        "meanings": [
+            "verb: to answer",
+            "verb: to react"
+        ],
+        "examples": [
+            "Waiters who respond to customers' questions with a smile generally get more money.",
+            "If you scare a turtle, it will respond by hiding in its shell."
+        ]
+    },
+    "label": {
+        "meanings": [
+            "noun: a name or phrase given to a group of things to identify them (often negative)",
+            "verb: to give a label to something"
+        ],
+        "examples": [
+            "The meaning of the label \"punk\" has changed greatly in the last 30 years.",
+            "Children are often unkind and label others who look different as outsiders."
+        ]
+    },
+    "acquire": {
+        "meanings": [
+            "verb: to get (especially when you will continue to get more)"
+        ],
+        "examples": [
+            "Janice isn't a doctor yet, but from her studies she is slowly acquiring the knowledge and skills she'll need."
+        ]
+    },
+    "source": {
+        "meanings": [
+            "noun: where something comes from"
+        ],
+        "examples": [
+            "Do not trust books that give information without listed sources. The facts could be false."
+        ]
+    },
+    "react": {
+        "meanings": [
+            "verb: to respond; to act in answer to"
+        ],
+        "examples": [
+            "Mothers react quickly to their babies' cries, even in the middle of the night."
+        ]
+    },
+    "individual": {
+        "meanings": [
+            "adjective: single or separated; only one of"
+        ],
+        "examples": [
+            "Joan was surprised that the ten books she ordered from the internet came together, but in individual boxes."
+        ]
+    },
+    "occur": {
+        "meanings": [
+            "verb: to happen"
+        ],
+        "examples": [
+            "The sinking of the Titanic occurred on the night of April 14, 1912."
+        ]
+    },
+    "challenge": {
+        "meanings": [
+            "noun: something difficult",
+            "verb: to suggest a fight or argument; to disagree or try to fight somebody",
+            "verb: to say something isn't true"
+        ],
+        "examples": [
+            "New medicines face many challenges before they can be put in stores.",
+            "In order to get the attention of females, males of many animal species will challenge each other in different ways.",
+            "Einstein's writings challenged many ideas of the time."
+        ]
+    },
+    "affect": {
+        "meanings": [
+            "verb: to change; to make different; to have an effect"
+        ],
+        "examples": [
+            "Which language we speak affects how we think about the world."
+        ]
+    },
+    "participate": {
+        "meanings": [
+            "verb: to join or take part (in an activity)"
+        ],
+        "examples": [
+            "The teacher was surprised when every student participated in the math game."
+        ]
+    },
+    "resolve": {
+        "meanings": [
+            "verb: to agree; to decide; to solve a problem or argument"
+        ],
+        "examples": [
+            "Even after meeting for hours, the government leaders still could not resolve their argument over new taxes."
+        ]
+    },
+    "conduct": {
+        "meanings": [
+            "verb: to organize and manage (an event that takes careful planning and control)"
+        ],
+        "examples": [
+            "My research team is conducting a study on how the internet is changing dating in five countries."
+        ]
+    },
+    "resource": {
+        "meanings": [
+            "noun: some saved material that can be used for a purpose (especially money, oil, or books)"
+        ],
+        "examples": [
+            "Many of the richest countries have surprisingly few natural resources and must buy oil from other countries.",
+            "Use the library during your studies; it's full of great resources."
+        ]
+    },
+    "physical": {
+        "meanings": [
+            "adjective: of the body (not the mind)",
+            "adjective: concrete (something real that you can touch or feel)"
+        ],
+        "examples": [
+            "Cleaning up the campus garden was tiring, physical work.",
+            "Katerina doesn't like paying for music without a physical copy, such as a CD."
+        ]
+    },
+    "evident": {
+        "meanings": [
+            "adjective: clearly seen or understood; obvious"
+        ],
+        "examples": [
+            "Dogs' feelings are usually evident in their actions."
+        ]
+    },
+    "Magoosh IELTS Blog": {
+        "meanings": [
+            "noun: A place to find valuable information including IELTS study tips. Learn more at magoosh.com/ielts."
+        ],
+        "examples": []
+    },
+    "research": {
+        "meanings": [
+            "verb: to find or search for more information about something",
+            "noun: information collected about something (usually academic)"
+        ],
+        "examples": [
+            "After growing up on an island, Malika hoped to research ocean temperatures in graduate school.",
+            "Dr. Stanislaus was famous for his research on changes in health education over the past 100 years."
+        ]
+    },
+    "maintain": {
+        "meanings": [
+            "verb: to continue",
+            "verb: to keep alive; to keep in good state or condition",
+            "verb: to continue to say although people disagree"
+        ],
+        "examples": [
+            "China has maintained a friendship with the U.S., although the two countries often have different needs and ideas.",
+            "These roads are so badly maintained that they're difficult to drive on.",
+            "Until his death, Christopher Columbus maintained that he had sailed to Asia, not America."
+        ]
+    },
+    "complex": {
+        "meanings": [
+            "adjective: complicated; having many different parts and difficult to understand"
+        ],
+        "examples": [
+            "The science behind the atomic bomb used in World War II was highly complex at the time, but it is simple compared to today's nuclear science."
+        ]
+    },
+    "achieve": {
+        "meanings": [
+            "verb: to finally do something you have been trying hard to do"
+        ],
+        "examples": [
+            "The best students know that to achieve good grades, they have to study every day."
+        ]
+    },
+    "construct": {
+        "meanings": [
+            "verb: to build"
+        ],
+        "examples": [
+            "The land flooded every year, so it was unsafe to construct buildings on it."
+        ]
+    },
+    "culture": {
+        "meanings": [
+            "noun: the way a group of people living in one area normally acts, including arts, style, food, and how people talk to and act with each other"
+        ],
+        "examples": [
+            "When living in another country, it can be very difficult to become comfortable in the new culture."
+        ]
+    },
+    "remove": {
+        "meanings": [
+            "verb: to take away or take out"
+        ],
+        "examples": [
+            "The grocery store removed all of the milk after the government said it was unsafe to drink."
+        ]
+    }
+}

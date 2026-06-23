@@ -1,0 +1,402 @@
+{
+    "fuse": {
+        "meanings": [
+            "verb: combine into one"
+        ],
+        "examples": [
+            "The two cities of Buda and Pest were separate for centuries, but in the nineteenth century they fused to become Budapest."
+        ]
+    },
+    "coax": {
+        "meanings": [
+            "verb: to gently persuade or influence to do something"
+        ],
+        "examples": [
+            "The kittens were shy and distrustful; even a big piece of fish on the floor couldn't coax them out from their hiding place behind the couch."
+        ]
+    },
+    "juxtapose": {
+        "meanings": [
+            "verb: to show contrast by placing two things next to each other"
+        ],
+        "examples": [
+            "My car is still new, but it looks cheap in this parking lot, juxtaposed with so many luxury cars."
+        ]
+    },
+    "arid": {
+        "meanings": [
+            "adjective: dry, without rain"
+        ],
+        "examples": [
+            "Due to years of little rainfall in California, lakes are dry, rivers are empty, and forests are arid."
+        ]
+    },
+    "verge": {
+        "meanings": [
+            "noun: the time when an event will happen very soon (as \"on the verge of\")"
+        ],
+        "examples": [
+            "I was on the verge of throwing my unresponsive computer out the window when I realized the battery was simply dead."
+        ]
+    },
+    "wither": {
+        "meanings": [
+            "verb: dry out and die (used for plants)"
+        ],
+        "examples": [
+            "After two weeks on vacation, the family returned to find that their plants had withered from sitting in the sun and not receiving enough water."
+        ]
+    },
+    "forage": {
+        "meanings": [
+            "verb: to move around in search for food"
+        ],
+        "examples": [
+            "Raccoons are experts at foraging for food: they can find scraps at a campground, under the seats at a ball stadium, or anywhere humans create trash."
+        ]
+    },
+    "indignant": {
+        "meanings": [
+            "adjective: angered at something unjust or wrong"
+        ],
+        "examples": [
+            "Geoffrey was indignant after the same driver got in front of him then slowed down for the third time."
+        ]
+    },
+    "banish": {
+        "meanings": [
+            "verb: to send (a person) away permanently in punishment"
+        ],
+        "examples": [
+            "When my parents banished my boyfriend Mitchell from our house, he wasn't even allowed on the front lawn: he had to stay as far away as possible."
+        ]
+    },
+    "feeble": {
+        "meanings": [
+            "adjective: very weak"
+        ],
+        "examples": [
+            "After months of being sick in bed, Harry did not have all of his energy back and felt quite feeble when trying to do even simple things."
+        ]
+    },
+    "elusive": {
+        "meanings": [
+            "adjective: difficult to find, catch, or achieve"
+        ],
+        "examples": [
+            "Many birdwatchers enjoy tracking highly elusive species because the reward of actually seeing a rare bird is so great."
+        ]
+    },
+    "undergo": {
+        "meanings": [
+            "verb: experience a difficult change or process"
+        ],
+        "examples": [
+            "Aiko's school had undergone a quick but detailed renovation, making it disturbingly unfamiliar to her when she returned after only a few weeks away."
+        ]
+    },
+    "sever": {
+        "meanings": [
+            "verb: to cut off from a whole"
+        ],
+        "examples": [
+            "With one strong swing of a heavy axe, the head of the fallen king was severed, and the people were free."
+        ]
+    },
+    "adverse": {
+        "meanings": [
+            "adjective: making success more difficult"
+        ],
+        "examples": [
+            "They were planning on pouring concrete for the building's foundation this week, but due to the rain, the conditions are too adverse to do so."
+        ]
+    },
+    "drought": {
+        "meanings": [
+            "noun: a long time with not enough rain"
+        ],
+        "examples": [
+            "The drought left the landscape dry and lifeless; it had not rained in months, and even the river that the town depended on for water had dried up."
+        ]
+    },
+    "ornate": {
+        "meanings": [
+            "adjective: heavily decorated in small detail"
+        ],
+        "examples": [
+            "The statues on the church wall are highly ornate: it took the artist years to carve the tiny details."
+        ]
+    },
+    "pressing": {
+        "meanings": [
+            "adjective: important immediately"
+        ],
+        "examples": [
+            "It was six in the morning and she still hadn't finished the essay that was due at eight; but after working all night, her most pressing need was a cup of coffee."
+        ]
+    },
+    "hoist": {
+        "meanings": [
+            "verb: lift up"
+        ],
+        "examples": [
+            "With his face red and his teeth clenched tight, the bodybuilder successfully hoisted the weights over his chest."
+        ]
+    },
+    "quaint": {
+        "meanings": [
+            "adjective: attractive and old-fashioned (used especially for places or traditions)"
+        ],
+        "examples": [
+            "As Mary walked through the quaint little village with old-fashioned cottages and stone streets, she felt that she had gone back in time."
+        ]
+    },
+    "prose": {
+        "meanings": [
+            "noun: writing made of normal sentences, not a poem"
+        ],
+        "examples": [
+            "Don Quixote is often called \"the first modern novel\" in European literature, largely because it was one of the first stories written in prose."
+        ]
+    },
+    "seep": {
+        "meanings": [
+            "verb: to flow slowly through something with many small holes"
+        ],
+        "examples": [
+            "Some people are worried that new methods of natural gas extraction from the earth cause toxic chemicals to seep into the water underground."
+        ]
+    },
+    "murky": {
+        "meanings": [
+            "adjective: dark or cloudy and hard to see through"
+        ],
+        "examples": [
+            "The dirt and debris from the landslide went down the river and turned the previously clear lake a murky brown."
+        ]
+    },
+    "bleak": {
+        "meanings": [
+            "adjective: cold-feeling and dark; hopeless"
+        ],
+        "examples": [
+            "Veronica bought two plane tickets to the sunny Caribbean because she didn't want to suffer through another winter in her bleak hometown."
+        ]
+    },
+    "prolific": {
+        "meanings": [
+            "adjective: producing many things"
+        ],
+        "examples": [
+            "Schubert was the most prolific composer, producing hundreds of hours of music before he died at the age of 31."
+        ]
+    },
+    "jeopardy": {
+        "meanings": [
+            "noun: a state of danger"
+        ],
+        "examples": [
+            "Tony Stark, the arrogant billionaire, placed the lives of his loved ones in jeopardy when he publicly announced that he was the superhero, Ironman."
+        ]
+    },
+    "minute": {
+        "meanings": [
+            "adjective: extremely small"
+        ],
+        "examples": [
+            "Unfortunately for her students, the professor noticed even the most minute mistakes in essays that she graded."
+        ]
+    },
+    "disingenuous": {
+        "meanings": [
+            "adjective: dishonest or not giving the whole truth"
+        ],
+        "examples": [
+            "The public could not trust their disingenuous leader, as he was infamous for avoiding direct answers to question in every interview."
+        ]
+    },
+    "advent": {
+        "meanings": [
+            "noun: the time when a big change started or arrived"
+        ],
+        "examples": [
+            "The advent of the Internet was a major event in human history—never before could people search for and find information so easily."
+        ]
+    },
+    "erratic": {
+        "meanings": [
+            "adjective: often changing suddenly and unpredictably"
+        ],
+        "examples": [
+            "The wild, sudden turns of the car led the police officer to investigate; when asked about his erratic driving, the driver had no explanation."
+        ]
+    },
+    "sound": {
+        "meanings": [
+            "adjective: logical and understandable, without errors"
+        ],
+        "examples": [
+            "After several months of careful investigation, the committee decided that its conclusions were clear and sound enough to report to the public."
+        ]
+    },
+    "dwelling": {
+        "meanings": [
+            "noun: housing that someone is living in"
+        ],
+        "examples": [
+            "Expecting her lazy boyfriend’s dwelling to be messy, Jane was shocked to find that the apartment was neat and clean."
+        ]
+    },
+    "telling": {
+        "meanings": [
+            "adjective: showing the truth (used for a story or piece of information)"
+        ],
+        "examples": [
+            "When I asked William if he still loved me, he didn't say \"no,\" but his silence was telling."
+        ]
+    },
+    "adept": {
+        "meanings": [
+            "adjective: skilled in a specific ability"
+        ],
+        "examples": [
+            "After many years of practice and repetition, the sculptor was adept at carving perfect representations of the human body in stone."
+        ]
+    },
+    "wary": {
+        "meanings": [
+            "adjective: cautious, not trusting"
+        ],
+        "examples": [
+            "Years of being stuck in the loud and crowded shelter made the dog wary of other animals."
+        ]
+    },
+    "lure": {
+        "meanings": [
+            "verb: to persuade somebody or an animal come somewhere by promising a reward"
+        ],
+        "examples": [
+            "In order to lure the mouse into the trap, Gary placed a small amount of peanut butter inside."
+        ]
+    },
+    "haphazard": {
+        "meanings": [
+            "adjective: not done well and done quickly without planning"
+        ],
+        "examples": [
+            "As there were no building materials readily available after the storm, victims built haphazard shelters from whatever they could find."
+        ]
+    },
+    "innocuous": {
+        "meanings": [
+            "adjective: not harmful"
+        ],
+        "examples": [
+            "I thought Jim's comment about how much salt I'd put on my food were innocuous until I realized he was criticizing my health choices."
+        ]
+    },
+    "paramount": {
+        "meanings": [
+            "adjective: of the highest importance"
+        ],
+        "examples": [
+            "Although we want the mission to send a man to Mars to succeed, the lives and safety of the astronauts are paramount."
+        ]
+    },
+    "gaudy": {
+        "meanings": [
+            "adjective: too colorful and overly decorated"
+        ],
+        "examples": [
+            "Karen knew the bright pink, skin-tight suit was gaudy, but she had promised her five-year old son that he could pick her clothing for the party."
+        ]
+    },
+    "adorn": {
+        "meanings": [
+            "verb: to add decoration and detail to make more beautiful"
+        ],
+        "examples": [
+            "Late last night, somebody painted cat faces on all the statues that adorn our town's government buildings."
+        ]
+    },
+    "torrent": {
+        "meanings": [
+            "noun: an extremely heavy rain"
+        ],
+        "examples": [
+            "The torrent of rain that accompanied the typhoon dumped several metres of water on the city over the course of the week."
+        ]
+    },
+    "deplete": {
+        "meanings": [
+            "verb: use all of (used especially for natural resources)"
+        ],
+        "examples": [
+            "The soldiers had carelessly depleted all of their resources, during the summer, leaving little food for the oncoming winter."
+        ]
+    },
+    "tactful": {
+        "meanings": [
+            "adjective: careful not to do things that hurt or anger other people"
+        ],
+        "examples": [
+            "Arriving in a new country can be difficult for even the most tactful person; customs that are ordinary in one country may be offensive in others."
+        ]
+    },
+    "fable": {
+        "meanings": [
+            "noun: a traditional story that teaches a lesson"
+        ],
+        "examples": [
+            "Grandma's fables always had very specific lessons; my favorites were \"The elf that always left the toilet seat up\" and \"the fairy that chatted on Facebook instead of getting Granny a glass of water.\""
+        ]
+    },
+    "cope": {
+        "meanings": [
+            "verb: to manage a difficult situation, especially emotionally"
+        ],
+        "examples": [
+            "If we could teach children how to cope with difficult situations, they might have better emotional stability throughout their lives."
+        ]
+    },
+    "salvage": {
+        "meanings": [
+            "verb: to save something from the destruction of everything around it"
+        ],
+        "examples": [
+            "In order to keep costs down in repairing his car, Stephen salvaged old parts from a local junkyard."
+        ]
+    },
+    "wares": {
+        "meanings": [
+            "noun: objects for sale"
+        ],
+        "examples": [
+            "The store owner was tired of shouting out onto the street all of the different items in her store, so she made wood signs listing her wares instead."
+        ]
+    },
+    "remote": {
+        "meanings": [
+            "adjective: far away"
+        ],
+        "examples": [
+            "McMurdo station, an American research facility in Antarctica, is one of the world's most remote settlements."
+        ]
+    },
+    "avert": {
+        "meanings": [
+            "verb: to turn away from or prevent"
+        ],
+        "examples": [
+            "After heavy rain this winter, water was released from Lake Shasta to avert flooding."
+        ]
+    },
+    "levy": {
+        "meanings": [
+            "verb: to use government authority to demand payment"
+        ],
+        "examples": [
+            "In an effort to grow his support among the rich, the newly crowned king put an end to taxes that his father had previously levied on merchants."
+        ]
+    }
+}

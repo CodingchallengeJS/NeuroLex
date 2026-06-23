@@ -1,0 +1,434 @@
+{
+    "stress": {
+        "meanings": [
+            "verb: to place extra importance on one part",
+            "noun: extra importance placed on one part",
+            "noun: pressure, strain, tension; worry"
+        ],
+        "examples": [
+            "If you stress the wrong words or sounds when speaking English, you may not be understood.",
+            "I believe we should place greater stress on improving education.",
+            "Final exams are soon, so stress levels are high among students."
+        ]
+    },
+    "identify": {
+        "meanings": [
+            "verb: to name, to show or figure out what something is"
+        ],
+        "examples": [
+            "Scientists have not been able to identify the language written on the rocks."
+        ]
+    },
+    "approach": {
+        "meanings": [
+            "verb: to move closer to something or someone",
+            "noun: a way to do something"
+        ],
+        "examples": [
+            "The sign at the park said clearly, \"Do not approach wild animals! They will bite.\"",
+            "The new CEO had a very strange approach to management, letting his employees sleep whenever they wanted."
+        ]
+    },
+    "demonstrate": {
+        "meanings": [
+            "verb: to show an example of, to prove with evidence"
+        ],
+        "examples": [
+            "At eight years old, Mozart demonstrated his musical ability in London."
+        ]
+    },
+    "select": {
+        "meanings": [
+            "verb: to choose",
+            "adjective: chosen as the best from a group"
+        ],
+        "examples": [
+            "There are four different math courses you may select from in your first year.",
+            "Harvard students are a select group of very intelligent, successful students who are often from rich families."
+        ]
+    },
+    "contrast": {
+        "meanings": [
+            "verb: to be clearly different from",
+            "verb: to look specifically at the differences between two things"
+        ],
+        "examples": [
+            "The zebra's black and white stripes contrast clearly with the yellow grass around it.",
+            "By contrasting the vocabulary of French and Spanish, we can see their different histories."
+        ]
+    },
+    "require": {
+        "meanings": [
+            "verb: to need for a specific purpose; to set as the minimum"
+        ],
+        "examples": [
+            "All life, plants and animals included, requires water."
+        ]
+    },
+    "accurate": {
+        "meanings": [
+            "adjective: correct (about information, not opinions); on target"
+        ],
+        "examples": [
+            "That test is not an accurate test of intelligence."
+        ]
+    },
+    "restrict": {
+        "meanings": [
+            "verb: to limit, to make some actions impossible"
+        ],
+        "examples": [
+            "This parking area is restricted: only university students may use it."
+        ]
+    },
+    "despite": {
+        "meanings": [
+            "preposition: even with (when an event is surprising because of some difficulty)"
+        ],
+        "examples": [
+            "We enjoyed our vacation despite the rain."
+        ]
+    },
+    "theory": {
+        "meanings": [
+            "noun: an idea or belief about how something works"
+        ],
+        "examples": [
+            "There are many theories about why we dream."
+        ]
+    },
+    "hence": {
+        "meanings": [
+            "adverb: therefore, so, as a result"
+        ],
+        "examples": [
+            "The evidence is false; hence, the conclusion is also false."
+        ]
+    },
+    "constant": {
+        "meanings": [
+            "adjective: not changing and not stopping; continuous"
+        ],
+        "examples": [
+            "The river flows constantly through the year and never freezes."
+        ]
+    },
+    "assume": {
+        "meanings": [
+            "verb: to believe without proof"
+        ],
+        "examples": [
+            "Ahmed assumed his forgetful professor wouldn't remember their meeting, but the professor was already waiting for him in her office."
+        ]
+    },
+    "hypothesis": {
+        "meanings": [
+            "noun: an idea which explains something but is unproven"
+        ],
+        "examples": [
+            "The hypothesis that the Earth is growing was shown to be false."
+        ]
+    },
+    "lecture": {
+        "meanings": [
+            "noun: a long speech about one topic that teaches (especially in a classroom)",
+            "verb: to give a long speech about a topic when trying to teach"
+        ],
+        "examples": [
+            "Professor Jackson's lectures are too long; I always fall asleep.",
+            "When I was in high school, my father often lectured me on the dangers of alcohol."
+        ]
+    },
+    "feature": {
+        "meanings": [
+            "noun: an important characteristic, a property",
+            "verb: to include as an important piece"
+        ],
+        "examples": [
+            "The sound made by \"r\" is one of the most difficult features of spoken English.",
+            "The university's new student housing features larger rooms than the old building did."
+        ]
+    },
+    "illustrate": {
+        "meanings": [
+            "verb: to explain with an example or picture"
+        ],
+        "examples": [
+            "Peter illustrated his point by telling a short story."
+        ]
+    },
+    "substitute": {
+        "meanings": [
+            "verb: to take out and put something else in the same place (usually something worse)",
+            "noun: something that goes in the place of the normal thing"
+        ],
+        "examples": [
+            "Because we didn't have any, we substituted the sugar with juice.",
+            "Many smokers who try to quit use chewing gum as a substitute for cigarettes."
+        ]
+    },
+    "involve": {
+        "meanings": [
+            "verb: to include, to have as a part"
+        ],
+        "examples": [
+            "The study of architecture involves both art and science."
+        ]
+    },
+    "concept": {
+        "meanings": [
+            "noun: an abstract idea"
+        ],
+        "examples": [
+            "Some concepts within advanced mathematics are hard to show in the real world."
+        ]
+    },
+    "consume": {
+        "meanings": [
+            "verb: to eat",
+            "verb: to use up (a resource)"
+        ],
+        "examples": [
+            "Yeast, which is used to make beer, consumes sugars to create alcohol.",
+            "No country consumes more oil than the U.S.A. does."
+        ]
+    },
+    "data": {
+        "meanings": [
+            "noun: information, facts"
+        ],
+        "examples": [
+            "We collect data on the oceans' temperatures every year."
+        ]
+    },
+    "investigate": {
+        "meanings": [
+            "verb: to try to find answers to questions about something; to research"
+        ],
+        "examples": [
+            "Doctors are investigating a newly discovered plant that might help to fight cancer."
+        ]
+    },
+    "sufficient": {
+        "meanings": [
+            "adjective: enough in amount for what is needed"
+        ],
+        "examples": [
+            "Because of weather changes, farms couldn't grow sufficient rice to feed the country last year."
+        ]
+    },
+    "trend": {
+        "meanings": [
+            "verb: the direction or way in which something is changing"
+        ],
+        "examples": [
+            "Today's computer culture is trending toward more touch-screen technology."
+        ]
+    },
+    "instance": {
+        "meanings": [
+            "noun: an example, a case"
+        ],
+        "examples": [
+            "Two animals in Australia (platypuses and echidnas) are the only instances of animals with hair that lay eggs."
+        ]
+    },
+    "whereas": {
+        "meanings": [
+            "conjunction: although (used to contrast two different things)"
+        ],
+        "examples": [
+            "Lemons are very sour whereas most fruits are sweet."
+        ]
+    },
+    "significant": {
+        "meanings": [
+            "adjective: important or big enough that you should notice or pay attention"
+        ],
+        "examples": [
+            "Most animals spend a significant amount of their time looking for food."
+        ]
+    },
+    "furthermore": {
+        "meanings": [
+            "adverb: also, in addition"
+        ],
+        "examples": [
+            "Kenya has beautiful weather and, furthermore, does not have long nights in the winter."
+        ]
+    },
+    "analyze": {
+        "meanings": [
+            "verb: to try to understand something better by closely looking at its details"
+        ],
+        "examples": [
+            "The accountant was too busy with paperwork to analyze the report that said the company had no money."
+        ]
+    },
+    "register": {
+        "meanings": [
+            "verb: to put your name or other information in a list for something",
+            "verb: to identify and show on a tool for measuring"
+        ],
+        "examples": [
+            "If you'd like to buy a meal plan, you can register at the student affairs office.",
+            "The bomb was so strong that far-away weather balloons registered the heat."
+        ]
+    },
+    "fundamental": {
+        "meanings": [
+            "adjective: basic, central",
+            "adjective: extremely important"
+        ],
+        "examples": [
+            "Alice believes that women are fundamentally different from men.",
+            "The fundamental beliefs of most religions are peaceful."
+        ]
+    },
+    "project": {
+        "meanings": [
+            "noun: a plan or task to reach a specific goal",
+            "verb: to predict the measurement of something in the future from present measurements",
+            "verb: to send out, to throw (light, energy, images)"
+        ],
+        "examples": [
+            "Cleaning out the storage room was a big project, but it's nice to see it empty, now.",
+            "Based on this year's success, Apple is projecting similar growth next year, too.",
+            "Hoping to communicate with aliens, scientists have been projecting radio messages into space for many years."
+        ]
+    },
+    "issue": {
+        "meanings": [
+            "noun: a topic or situation to talk about",
+            "noun: a problem"
+        ],
+        "examples": [
+            "In order to define what jazz music is, we need to look at a few different issues.",
+            "Monarchies (governments with kings or queens) often have several common issues."
+        ]
+    },
+    "overall": {
+        "meanings": [
+            "adjective: looking at or including all pieces or factors",
+            "adverb: in general, for the most part"
+        ],
+        "examples": [
+            "Some words might be new and difficult, but the overall meaning of the sentence is clear.",
+            "Overall, Americans eat a lot of beef, especially compared to people in other countries."
+        ]
+    },
+    "emphasize": {
+        "meanings": [
+            "verb: to place extra importance on one part"
+        ],
+        "examples": [
+            "Most modern art emphasizes creativity and emotion, not skill."
+        ]
+    },
+    "brief": {
+        "meanings": [
+            "adjective: short (about time, not length)"
+        ],
+        "examples": [
+            "Before we begin class, let me briefly introduce myself."
+        ]
+    },
+    "assess": {
+        "meanings": [
+            "verb: to look closely at and figure out the value or type of something"
+        ],
+        "examples": [
+            "Before buying a house, you should always assess the building carefully."
+        ]
+    },
+    "adjust": {
+        "meanings": [
+            "verb: to change or move a little and make better or more accurate"
+        ],
+        "examples": [
+            "The colors on this TV screen are wrong. I'll adjust them."
+        ]
+    },
+    "context": {
+        "meanings": [
+            "noun: the information or situation around an idea, event, or something that is said"
+        ],
+        "examples": [
+            "When you have difficulty understanding a new word, look at the context. The sentence around the word might tell the meaning."
+        ]
+    },
+    "indicate": {
+        "meanings": [
+            "verb: to be a sign of, to show"
+        ],
+        "examples": [
+            "The way you speak and act indicates your emotions."
+        ]
+    },
+    "method": {
+        "meanings": [
+            "noun: how to do something, a process"
+        ],
+        "examples": [
+            "The Spanish method of making chocolate created a completely new drink."
+        ]
+    },
+    "establish": {
+        "meanings": [
+            "verb: to build, to create (a system, organization, or idea)"
+        ],
+        "examples": [
+            "The U.S. government was established in the late 1700s."
+        ]
+    },
+    "modify": {
+        "meanings": [
+            "verb: to make small changes or add to"
+        ],
+        "examples": [
+            "The first bicycles were slow and difficult to use, but they were modified over time."
+        ]
+    },
+    "function": {
+        "meanings": [
+            "verb: to work; to do what something should do",
+            "noun: what something does, its purpose"
+        ],
+        "examples": [
+            "I dropped my phone into a swimming pool, but it still functions, amazingly.",
+            "The hair on the human head has no clear function."
+        ]
+    },
+    "capable": {
+        "meanings": [
+            "adjective: able to do"
+        ],
+        "examples": [
+            "Near the age of twelve months, children are capable of walking."
+        ]
+    },
+    "predict": {
+        "meanings": [
+            "verb: to say something will happen in the future"
+        ],
+        "examples": [
+            "Charlie Chaplin predicted that movies would never become popular. He was wrong, clearly."
+        ]
+    },
+    "adequate": {
+        "meanings": [
+            "adjective: good enough for what is needed"
+        ],
+        "examples": [
+            "A very light jacket will be adequate for Los Angeles's warm winter."
+        ]
+    },
+    "nevertheless": {
+        "meanings": [
+            "adverb: however, regardless"
+        ],
+        "examples": [
+            "The decision was dangerous. Nevertheless, Hitler attacked Russia."
+        ]
+    }
+}

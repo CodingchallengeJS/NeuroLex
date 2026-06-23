@@ -26,6 +26,9 @@ CREATE TABLE vocabulary (
   id BIGSERIAL PRIMARY KEY,
   word VARCHAR(255) UNIQUE NOT NULL,
   meaning TEXT,
+  english_meaning TEXT,
+  vietnamese_meaning TEXT,
+  synonyms TEXT,
   phonetic VARCHAR(255),
   image_url TEXT,
   created_at TIMESTAMP DEFAULT NOW()
@@ -35,6 +38,7 @@ CREATE TABLE vocabulary (
 CREATE TABLE notebook_vocab (
   notebook_id BIGINT REFERENCES notebooks(id) ON DELETE CASCADE,
   vocab_id BIGINT REFERENCES vocabulary(id) ON DELETE CASCADE,
+  sort_order INTEGER,
   PRIMARY KEY (notebook_id, vocab_id)
 );
 

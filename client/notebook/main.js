@@ -1,6 +1,6 @@
 // client/notebook/main.js
 (function () {
-  const API_BASE_URL = window.__EVL_API_BASE__ || 'https://neurolex-production.up.railway.app';
+  const API_BASE_URL = window.__EVL_API_BASE__ || 'http://localhost:8000';
   const TOKEN_KEY = 'evl_access_token';
 
   const notebookTitle = document.getElementById('notebook-title');
@@ -128,6 +128,87 @@
     }
   }
 
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, (char) => {
+      const entities = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return entities[char];
+    });
+  }
+
+  function getEnglishMeaning(vocab) {
+    return vocab.english_meaning || '';
+  }
+
+  function getVietnameseMeaning(vocab) {
+    return vocab.vietnamese_meaning || vocab.meaning || '';
+  }
+
+  function getSynonyms(vocab) {
+    return String(vocab.synonyms || '')
+      .split(',')
+      .map((synonym) => synonym.trim())
+      .filter(Boolean);
+  }
+
+  function getVocabSearchText(vocab) {
+    return [
+      vocab.word,
+      vocab.phonetic,
+      vocab.meaning,
+      vocab.english_meaning,
+      vocab.vietnamese_meaning,
+      vocab.synonyms
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+  }
+
+  function renderMeaningRows(vocab) {
+    const englishMeaning = getEnglishMeaning(vocab);
+    const vietnameseMeaning = getVietnameseMeaning(vocab);
+    const rows = [];
+
+    if (englishMeaning) {
+      rows.push(`
+        <div class="meaning-row">
+          <span class="meaning-label">EN</span>
+          <span>${escapeHtml(englishMeaning)}</span>
+        </div>
+      `);
+    }
+
+    if (vietnameseMeaning && vietnameseMeaning !== englishMeaning) {
+      rows.push(`
+        <div class="meaning-row">
+          <span class="meaning-label">VI</span>
+          <span>${escapeHtml(vietnameseMeaning)}</span>
+        </div>
+      `);
+    }
+
+    return rows.join('');
+  }
+
+  function renderSynonymChips(vocab, className = 'vocab-card-synonyms') {
+    const synonyms = getSynonyms(vocab);
+    if (synonyms.length === 0) {
+      return '';
+    }
+
+    return `
+      <div class="${className}">
+        ${synonyms.map((synonym) => `<span class="synonym-chip">${escapeHtml(synonym)}</span>`).join('')}
+      </div>
+    `;
+  }
+
   function renderNotebookCards() {
     notebookGrid.innerHTML = '';
 
@@ -199,9 +280,7 @@
     }
 
     const q = searchInput.value.trim().toLowerCase();
-    const filtered = q
-      ? list.filter((v) => v.word.toLowerCase().includes(q) || (v.meaning || '').toLowerCase().includes(q))
-      : list;
+    const filtered = q ? list.filter((v) => getVocabSearchText(v).includes(q)) : list;
 
     vocabList.innerHTML = '';
     if (filtered.length === 0) {
@@ -211,13 +290,16 @@
 
     for (const v of filtered) {
       const lvLabel = v.repetition_level !== null ? `Lv ${v.repetition_level}` : '';
+      const meaningRows = renderMeaningRows(v);
+      const synonyms = renderSynonymChips(v);
       const card = document.createElement('div');
       card.className = 'vocab-card';
       card.innerHTML = `
         <div class="vocab-card-main">
-          <h3>${v.word}</h3>
-          <div class="vocab-card-phonetic">${v.phonetic || ''}</div>
-          <div class="vocab-card-meaning">${v.meaning || ''}</div>
+          <h3>${escapeHtml(v.word)}</h3>
+          <div class="vocab-card-phonetic">${escapeHtml(v.phonetic || '')}</div>
+          <div class="vocab-card-meaning">${meaningRows}</div>
+          ${synonyms}
         </div>
         <div class="vocab-card-actions">
           <div class="vocab-card-level">${lvLabel}</div>
@@ -227,6 +309,16 @@
           </div>
         </div>
       `;
+      const audioBtn = card.querySelector('.audio-btn');
+      if (audioBtn) {
+        audioBtn.type = 'button';
+        audioBtn.setAttribute('aria-label', `Phát âm ${v.word}`);
+        audioBtn.innerHTML = '<i class="fa-solid fa-volume-high" aria-hidden="true"></i>';
+      }
+      const reviewBtn = card.querySelector('.btn-review');
+      if (reviewBtn) {
+        reviewBtn.type = 'button';
+      }
       vocabList.appendChild(card);
     }
 
@@ -251,7 +343,7 @@
   function showReviewVocab(v) {
     reviewWordEl.textContent = v.word;
     reviewPhoneticEl.textContent = '';
-    reviewMeaningEl.textContent = '';
+    reviewMeaningEl.innerHTML = '';
     meaningRevealed = false;
     reviewActionsEl.classList.add('hidden');
     reviewHintEl.classList.remove('hidden');
@@ -276,7 +368,12 @@
     const v = reviewQueue[currentReviewIndex];
     if (!v) return;
     reviewPhoneticEl.textContent = v.phonetic || '';
-    reviewMeaningEl.textContent = v.meaning || '';
+    reviewMeaningEl.innerHTML = `
+      <div class="review-detail-stack">
+        ${renderMeaningRows(v)}
+        ${renderSynonymChips(v, 'review-synonyms')}
+      </div>
+    `;
     meaningRevealed = true;
     reviewHintEl.classList.add('hidden');
     reviewActionsEl.classList.remove('hidden');
@@ -364,7 +461,7 @@
     if (reviewQueue.length === 0) {
       reviewWordEl.textContent = 'Không có từ vựng nào trong mục này';
       reviewPhoneticEl.textContent = '';
-      reviewMeaningEl.textContent = '';
+      reviewMeaningEl.innerHTML = '';
       reviewProgressEl.textContent = config.label;
       reviewHintEl.classList.add('hidden');
       reviewActionsEl.classList.add('hidden');
