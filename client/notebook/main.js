@@ -1,6 +1,6 @@
 // client/notebook/main.js
 (function () {
-  const API_BASE_URL = window.__EVL_API_BASE__ || 'http://localhost:8000';
+  const API_BASE_URL = 'http://192.168.1.146:8000'; //'http://localhost:8000';
   const TOKEN_KEY = 'evl_access_token';
 
   const notebookTitle = document.getElementById('notebook-title');
@@ -23,6 +23,7 @@
   const srItemMastered = document.getElementById('sr-item-mastered');
   const startReviewBtn = document.getElementById('start-review-btn');
   const reviewNowBtn = document.getElementById('review-now-btn');
+  const srNotebookSelect = document.getElementById('sr-notebook-select');
 
   const reviewModal = document.getElementById('review-modal');
   const closeReview = document.getElementById('close-review');
@@ -141,6 +142,21 @@
     });
   }
 
+  function playAudio(text) {
+    if ('speechSynthesis' in window) {
+      // Hủy các luồng phát âm đang chờ (nếu có) để âm thanh phản hồi ngay lập tức
+      window.speechSynthesis.cancel(); 
+    
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US'; // Đặt ngôn ngữ là tiếng Anh Mỹ
+      utterance.rate = 0.75;     // (Tùy chọn) Giảm tốc độ đọc một chút để nghe rõ hơn
+    
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn('Trình duyệt của bạn không hỗ trợ Web Speech API.');
+    }
+  }
+
   function getEnglishMeaning(vocab) {
     return vocab.english_meaning || '';
   }
@@ -236,6 +252,16 @@
     notebooks = data.notebooks || [];
     renderNotebookCards();
 
+    if (srNotebookSelect) {
+      srNotebookSelect.innerHTML = '<option value="all">Tất cả sổ tay</option>';
+      for (const n of notebooks) {
+        const opt = document.createElement('option');
+        opt.value = n.id;
+        opt.textContent = n.title;
+        srNotebookSelect.appendChild(opt);
+      }
+    }
+
     if (notebooks.length === 0) {
       notebookDetail.classList.add('hidden');
       return;
@@ -314,6 +340,10 @@
         audioBtn.type = 'button';
         audioBtn.setAttribute('aria-label', `Phát âm ${v.word}`);
         audioBtn.innerHTML = '<i class="fa-solid fa-volume-high" aria-hidden="true"></i>';
+        audioBtn.addEventListener('click', (e) => {
+          e.stopPropagation(); // Ngăn chặn nổi bọt sự kiện (tránh vô tình kích hoạt click trên thẻ cha)
+          playAudio(v.word);
+        });
       }
       const reviewBtn = card.querySelector('.btn-review');
       if (reviewBtn) {
@@ -446,7 +476,11 @@
     const config = bucketConfig[bucketKey];
     if (!config) return;
 
-    const data = await apiRequest(`/repetition/items?bucket=${encodeURIComponent(bucketKey)}`);
+    let url = `/repetition/items?bucket=${encodeURIComponent(bucketKey)}`;
+    if (srNotebookSelect && srNotebookSelect.value !== 'all') {
+      url += `&notebook_id=${srNotebookSelect.value}`;
+    }
+    const data = await apiRequest(url);
     const vocabs = (data.vocabs || []).slice();
 
     if (config.random) {
@@ -517,7 +551,11 @@
 
   async function loadSRSummary() {
     try {
-      const data = await apiRequest('/repetition/summary');
+      let url = '/repetition/summary';
+      if (srNotebookSelect && srNotebookSelect.value !== 'all') {
+        url += `?notebook_id=${srNotebookSelect.value}`;
+      }
+      const data = await apiRequest(url);
       srNow.textContent = data.due_now || 0;
       sr1.textContent = data.due_1 || 0;
       sr3.textContent = data.due_3 || 0;
@@ -618,6 +656,12 @@
     }
   });
   searchInput.addEventListener('input', () => renderVocabList(currentVocabList));
+
+  if (srNotebookSelect) {
+    srNotebookSelect.addEventListener('change', () => {
+      loadSRSummary();
+    });
+  }
 
   (async function init() {
     try {

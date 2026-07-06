@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg: #050914;
   --bg-soft: rgba(8, 18, 38, 0.72);
   --card: rgba(12, 29, 63, 0.74);
@@ -649,7 +649,23 @@ body {
   color: var(--text-soft);
 }
 
-.sr-card h2 { margin-bottom: 6px; color: var(--accent); }
+.sr-card h2 { margin-bottom: 12px; color: var(--accent); }
+
+.sr-notebook-select {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  color: var(--text);
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.sr-notebook-select:focus {
+  border-color: rgba(110, 200, 255, 0.7);
+}
 .sr-item {
   display: flex;
   justify-content: space-between;

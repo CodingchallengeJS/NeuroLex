@@ -1,5 +1,5 @@
 ﻿(function () {
-  const API_BASE_URL = 'http://localhost:8000';
+  const API_BASE_URL = 'http://192.168.1.146:8000'; //'http://localhost:8000';
   const TOKEN_KEY = 'evl_access_token';
 
   const guestActions = document.getElementById('auth-guest-actions');

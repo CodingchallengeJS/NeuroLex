@@ -302,8 +302,9 @@ app.get('/notebooks/:id/vocabs', async (req, res) => {
  */
 app.get('/repetition/summary', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
+  const notebookId = req.query.notebook_id ? Number(req.query.notebook_id) : null;
   try {
-    const q = `
+    let q = `
       SELECT
           SUM((next_review_at <= now())::int) AS due_now,
           SUM((next_review_at > now() AND next_review_at <= now() + INTERVAL '1 day')::int) AS due_1,
@@ -311,10 +312,20 @@ app.get('/repetition/summary', authenticateToken, async (req, res) => {
           SUM((next_review_at > now() + INTERVAL '3 days' AND next_review_at <= now() + INTERVAL '7 days')::int) AS due_7,
           SUM((next_review_at > now() + INTERVAL '7 days' AND next_review_at <= now() + INTERVAL '14 days')::int) AS due_14,
           SUM((mastered)::int) AS mastered
-      FROM user_vocab_progress
-      WHERE user_id = $1;
+      FROM user_vocab_progress uvp
     `;
-    const r = await pool.query(q, [userId]);
+    let vals = [userId];
+    if (notebookId) {
+      q += `
+        JOIN notebook_vocab nv ON nv.vocab_id = uvp.vocab_id
+        WHERE uvp.user_id = $1 AND nv.notebook_id = $2
+      `;
+      vals.push(notebookId);
+    } else {
+      q += ` WHERE uvp.user_id = $1 `;
+    }
+
+    const r = await pool.query(q, vals);
     res.json(r.rows[0]);
   } catch (err) {
     console.error(err);
@@ -330,14 +341,8 @@ app.get('/repetition/summary', authenticateToken, async (req, res) => {
 app.get('/repetition/items', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
   const bucket = String(req.query.bucket || '');
-  // const conditions = {
-  //   due_now: 'uvp.next_review_at <= now()',
-  //   due_1: "date(uvp.next_review_at) = date(now() + INTERVAL '1 day')",
-  //   due_3: "date(uvp.next_review_at) = date(now() + INTERVAL '3 day')",
-  //   due_7: "date(uvp.next_review_at) = date(now() + INTERVAL '7 day')",
-  //   due_14: "date(uvp.next_review_at) = date(now() + INTERVAL '14 day')",
-  //   mastered: 'uvp.mastered = TRUE'
-  // };
+  const notebookId = req.query.notebook_id ? Number(req.query.notebook_id) : null;
+
   const conditions = {
     due_now: 'uvp.next_review_at <= now()',
     due_1: "uvp.next_review_at > now() AND uvp.next_review_at <= now() + INTERVAL '1 day'",
@@ -353,16 +358,24 @@ app.get('/repetition/items', authenticateToken, async (req, res) => {
   }
 
   try {
-    const q = `
+    let q = `
       SELECT
         ${vocabularySelectFields},
         uvp.repetition_level, uvp.interval_days, uvp.next_review_at, uvp.correct_streak, uvp.mastered
       FROM user_vocab_progress uvp
       JOIN vocabulary v ON v.id = uvp.vocab_id
-      WHERE uvp.user_id = $1 AND ${whereCondition}
-      ORDER BY uvp.next_review_at ASC, v.word ASC
     `;
-    const r = await pool.query(q, [userId]);
+    let vals = [userId];
+    if (notebookId) {
+      q += ` JOIN notebook_vocab nv ON nv.vocab_id = uvp.vocab_id `;
+      q += ` WHERE uvp.user_id = $1 AND ${whereCondition} AND nv.notebook_id = $2 `;
+      vals.push(notebookId);
+    } else {
+      q += ` WHERE uvp.user_id = $1 AND ${whereCondition} `;
+    }
+    q += ` ORDER BY uvp.next_review_at ASC, v.word ASC `;
+    
+    const r = await pool.query(q, vals);
     return res.json({ vocabs: r.rows });
   } catch (err) {
     console.error(err);
@@ -588,6 +601,7 @@ app.post('/review', authenticateToken, async (req, res) => {
 
 
 const port = Number.parseInt(process.env.PORT || '4000', 10);
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server is running on http://0.0.0.0:${port}`);
 });
