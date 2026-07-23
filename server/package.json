@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "envocablearner-server",
   "version": "1.0.0",
   "private": true,
@@ -12,6 +12,7 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
+    "csv-parser": "^3.2.1",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",

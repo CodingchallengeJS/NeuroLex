@@ -1,6 +1,6 @@
 // client/notebook/main.js
 (function () {
-  const API_BASE_URL = 'http://192.168.1.146:8000'; //'http://localhost:8000';
+  const API_BASE_URL = 'http://localhost:8001'; //'http://localhost:8000';
   const TOKEN_KEY = 'evl_access_token';
 
   const notebookTitle = document.getElementById('notebook-title');

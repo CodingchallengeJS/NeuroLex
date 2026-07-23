@@ -11,11 +11,16 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD
 });
 
+// SỬA ĐỔI 1: Bắt luôn cả trường hợp chữ 'null' text ngay từ khi làm sạch chữ
 function cleanText(value) {
   if (value === null || value === undefined) {
     return '';
   }
-  return String(value).trim();
+  const strValue = String(value).trim();
+  if (strValue.toLowerCase() === 'null') {
+    return '';
+  }
+  return strValue;
 }
 
 function emptyToNull(value) {
@@ -35,22 +40,37 @@ async function upsertNotebook(client, title, topic, difficulty) {
   return notebookRes.rows[0].id;
 }
 
+// SỬA ĐỔI 2: Cập nhật SQL thông minh, bắt buộc ghi đè nếu DB đang chứa NULL, 'null' hoặc rỗng
 async function upsertVocabulary(client, item) {
-  const result = await client.query(
-    `INSERT INTO vocabulary (word, meaning, english_meaning, vietnamese_meaning)
-     VALUES ($1,$2,$3,$4)
-     ON CONFLICT (word) DO UPDATE SET
-       meaning = COALESCE(EXCLUDED.meaning, vocabulary.meaning),
-       english_meaning = COALESCE(EXCLUDED.english_meaning, vocabulary.english_meaning),
-       vietnamese_meaning = COALESCE(EXCLUDED.vietnamese_meaning, vocabulary.vietnamese_meaning)
-     RETURNING id`,
-    [
-      item.word,
-      emptyToNull(item.meaning),
-      emptyToNull(item.englishMeaning),
-      emptyToNull(item.vietnameseMeaning)
-    ]
-  );
+  const query = `
+    INSERT INTO vocabulary (word, meaning, english_meaning, vietnamese_meaning)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (word) DO UPDATE SET
+       
+       meaning = CASE 
+         WHEN vocabulary.meaning IS NULL OR vocabulary.meaning IN ('', 'null') THEN EXCLUDED.meaning 
+         ELSE COALESCE(EXCLUDED.meaning, vocabulary.meaning) 
+       END,
+       
+       english_meaning = CASE 
+         WHEN vocabulary.english_meaning IS NULL OR vocabulary.english_meaning IN ('', 'null') THEN EXCLUDED.english_meaning 
+         ELSE COALESCE(EXCLUDED.english_meaning, vocabulary.english_meaning) 
+       END,
+       
+       vietnamese_meaning = CASE 
+         WHEN vocabulary.vietnamese_meaning IS NULL OR vocabulary.vietnamese_meaning IN ('', 'null') THEN EXCLUDED.vietnamese_meaning 
+         ELSE COALESCE(EXCLUDED.vietnamese_meaning, vocabulary.vietnamese_meaning) 
+       END
+
+    RETURNING id;
+  `;
+
+  const result = await client.query(query, [
+    item.word,
+    emptyToNull(item.meaning),
+    emptyToNull(item.englishMeaning),
+    emptyToNull(item.vietnameseMeaning)
+  ]);
 
   return result.rows[0].id;
 }
@@ -125,15 +145,15 @@ async function main() {
     await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS english_meaning TEXT');
     await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS vietnamese_meaning TEXT');
     await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS synonyms TEXT');
-    await client.query('ALTER TABLE notebook_vocab ADD COLUMN IF NOT EXISTS sort_order INTEGER');
+    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS example TEXT');
 
     const importedCount = await importMagoosh(client, magooshDir);
 
     await client.query('COMMIT');
-    console.log(`Magoosh import finished. Total words: ${importedCount}.`);
+    console.log(`✅ Magoosh import finished. Total words: ${importedCount}.`);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(err);
+    console.error('❌ Error during import, DB rolled back:', err);
     process.exitCode = 1;
   } finally {
     client.release();

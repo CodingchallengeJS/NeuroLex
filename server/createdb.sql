@@ -30,6 +30,7 @@ CREATE TABLE vocabulary (
   vietnamese_meaning TEXT,
   synonyms TEXT,
   phonetic VARCHAR(255),
+  example TEXT,
   image_url TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );

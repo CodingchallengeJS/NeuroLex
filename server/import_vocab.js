@@ -19,11 +19,16 @@ function resolveDataPath(filePath) {
   return path.resolve(__dirname, filePath);
 }
 
+// SỬA ĐỔI 1: Xử lý chữ 'null' text ngay từ bước làm sạch dữ liệu
 function cleanText(value) {
   if (value === null || value === undefined) {
     return '';
   }
-  return String(value).trim();
+  const strValue = String(value).trim();
+  if (strValue.toLowerCase() === 'null') {
+    return '';
+  }
+  return strValue;
 }
 
 function emptyToNull(value) {
@@ -118,26 +123,49 @@ async function upsertNotebook(client, title, topic, difficulty) {
   return notebookRes.rows[0].id;
 }
 
+// SỬA ĐỔI 2: Update SQL ghi đè những dòng bị 'null' hoặc rỗng trong DB
 async function upsertVocabulary(client, item) {
-  const result = await client.query(
-    `INSERT INTO vocabulary (word, meaning, phonetic, english_meaning, vietnamese_meaning, synonyms)
-     VALUES ($1,$2,$3,$4,$5,$6)
-     ON CONFLICT (word) DO UPDATE SET
-       meaning = COALESCE(EXCLUDED.meaning, vocabulary.meaning),
-       phonetic = COALESCE(EXCLUDED.phonetic, vocabulary.phonetic),
-       english_meaning = COALESCE(EXCLUDED.english_meaning, vocabulary.english_meaning),
-       vietnamese_meaning = COALESCE(EXCLUDED.vietnamese_meaning, vocabulary.vietnamese_meaning),
-       synonyms = COALESCE(EXCLUDED.synonyms, vocabulary.synonyms)
-     RETURNING id`,
-    [
-      item.word,
-      emptyToNull(item.meaning),
-      emptyToNull(item.phonetic),
-      emptyToNull(item.englishMeaning),
-      emptyToNull(item.vietnameseMeaning),
-      emptyToNull(item.synonyms)
-    ]
-  );
+  const query = `
+    INSERT INTO vocabulary (word, meaning, phonetic, english_meaning, vietnamese_meaning, synonyms)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (word) DO UPDATE SET
+      
+      meaning = CASE 
+        WHEN vocabulary.meaning IS NULL OR vocabulary.meaning IN ('', 'null') THEN EXCLUDED.meaning 
+        ELSE COALESCE(EXCLUDED.meaning, vocabulary.meaning) 
+      END,
+      
+      phonetic = CASE 
+        WHEN vocabulary.phonetic IS NULL OR vocabulary.phonetic IN ('', 'null') THEN EXCLUDED.phonetic 
+        ELSE COALESCE(EXCLUDED.phonetic, vocabulary.phonetic) 
+      END,
+      
+      english_meaning = CASE 
+        WHEN vocabulary.english_meaning IS NULL OR vocabulary.english_meaning IN ('', 'null') THEN EXCLUDED.english_meaning 
+        ELSE COALESCE(EXCLUDED.english_meaning, vocabulary.english_meaning) 
+      END,
+      
+      vietnamese_meaning = CASE 
+        WHEN vocabulary.vietnamese_meaning IS NULL OR vocabulary.vietnamese_meaning IN ('', 'null') THEN EXCLUDED.vietnamese_meaning 
+        ELSE COALESCE(EXCLUDED.vietnamese_meaning, vocabulary.vietnamese_meaning) 
+      END,
+      
+      synonyms = CASE 
+        WHEN vocabulary.synonyms IS NULL OR vocabulary.synonyms IN ('', 'null') THEN EXCLUDED.synonyms 
+        ELSE COALESCE(EXCLUDED.synonyms, vocabulary.synonyms) 
+      END
+      
+    RETURNING id;
+  `;
+
+  const result = await client.query(query, [
+    item.word,
+    emptyToNull(item.meaning),
+    emptyToNull(item.phonetic),
+    emptyToNull(item.englishMeaning),
+    emptyToNull(item.vietnameseMeaning),
+    emptyToNull(item.synonyms)
+  ]);
 
   return result.rows[0].id;
 }
@@ -241,10 +269,10 @@ async function main() {
     const satCount = await importSatCsv(client, satCsvFile);
 
     await client.query('COMMIT');
-    console.log(`Import finished. JSON words: ${jsonCount}. SAT CSV words: ${satCount}.`);
+    console.log(`✅ Import finished. JSON words: ${jsonCount}. SAT CSV words: ${satCount}.`);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(err);
+    console.error('❌ Có lỗi xảy ra, đã rollback DB:', err);
     process.exitCode = 1;
   } finally {
     client.release();

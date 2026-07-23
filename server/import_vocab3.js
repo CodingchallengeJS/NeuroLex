@@ -11,11 +11,16 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD
 });
 
+// SỬA ĐỔI 1: Bắt luôn cả trường hợp chữ 'null' dạng text
 function cleanText(value) {
   if (value === null || value === undefined) {
     return '';
   }
-  return String(value).trim();
+  const strValue = String(value).trim();
+  if (strValue.toLowerCase() === 'null') {
+    return '';
+  }
+  return strValue;
 }
 
 function emptyToNull(value) {
@@ -41,26 +46,49 @@ async function upsertNotebook(client, title, topic, difficulty) {
   return notebookRes.rows[0].id;
 }
 
+// SỬA ĐỔI 2: Cập nhật SQL thông minh hơn
 async function upsertVocabulary(client, item) {
-  const result = await client.query(
-    `INSERT INTO vocabulary (word, meaning, phonetic, english_meaning, vietnamese_meaning, synonyms)
-     VALUES ($1,$2,$3,$4,$5,$6)
-     ON CONFLICT (word) DO UPDATE SET
-       meaning = COALESCE(EXCLUDED.meaning, vocabulary.meaning),
-       phonetic = COALESCE(EXCLUDED.phonetic, vocabulary.phonetic),
-       english_meaning = COALESCE(EXCLUDED.english_meaning, vocabulary.english_meaning),
-       vietnamese_meaning = COALESCE(EXCLUDED.vietnamese_meaning, vocabulary.vietnamese_meaning),
-       synonyms = COALESCE(EXCLUDED.synonyms, vocabulary.synonyms)
-     RETURNING id`,
-    [
-      item.word,
-      emptyToNull(item.meaning),
-      emptyToNull(item.phonetic),
-      emptyToNull(item.englishMeaning),
-      emptyToNull(item.vietnameseMeaning),
-      emptyToNull(item.synonyms)
-    ]
-  );
+  const query = `
+    INSERT INTO vocabulary (word, meaning, phonetic, english_meaning, vietnamese_meaning, synonyms)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (word) DO UPDATE SET
+      
+      meaning = CASE 
+        WHEN vocabulary.meaning IS NULL OR vocabulary.meaning IN ('', 'null') THEN EXCLUDED.meaning 
+        ELSE COALESCE(EXCLUDED.meaning, vocabulary.meaning) 
+      END,
+      
+      phonetic = CASE 
+        WHEN vocabulary.phonetic IS NULL OR vocabulary.phonetic IN ('', 'null') THEN EXCLUDED.phonetic 
+        ELSE COALESCE(EXCLUDED.phonetic, vocabulary.phonetic) 
+      END,
+      
+      english_meaning = CASE 
+        WHEN vocabulary.english_meaning IS NULL OR vocabulary.english_meaning IN ('', 'null') THEN EXCLUDED.english_meaning 
+        ELSE COALESCE(EXCLUDED.english_meaning, vocabulary.english_meaning) 
+      END,
+      
+      vietnamese_meaning = CASE 
+        WHEN vocabulary.vietnamese_meaning IS NULL OR vocabulary.vietnamese_meaning IN ('', 'null') THEN EXCLUDED.vietnamese_meaning 
+        ELSE COALESCE(EXCLUDED.vietnamese_meaning, vocabulary.vietnamese_meaning) 
+      END,
+      
+      synonyms = CASE 
+        WHEN vocabulary.synonyms IS NULL OR vocabulary.synonyms IN ('', 'null') THEN EXCLUDED.synonyms 
+        ELSE COALESCE(EXCLUDED.synonyms, vocabulary.synonyms) 
+      END
+      
+    RETURNING id;
+  `;
+
+  const result = await client.query(query, [
+    item.word,
+    emptyToNull(item.meaning),
+    emptyToNull(item.phonetic),
+    emptyToNull(item.englishMeaning),
+    emptyToNull(item.vietnameseMeaning),
+    emptyToNull(item.synonyms)
+  ]);
 
   return result.rows[0].id;
 }
@@ -86,10 +114,9 @@ async function importMarkdown(client, filePath) {
 
   const raw = fs.readFileSync(filePath, 'utf-8');
   
-  const notebookTitle = 'SAT B2C1 1000 P1';
+  const notebookTitle = 'SAT B2C1 1000 P3';
   const notebookId = await upsertNotebook(client, notebookTitle, 'SAT Vocabulary', 'B2-C1');
 
-  // Match <tr> rows. Using a non-greedy regex to capture <tr>...</tr> blocks.
   const trRegex = /<tr>([\s\S]*?)<\/tr>/g;
   let match;
   let importedCount = 0;
@@ -97,10 +124,8 @@ async function importMarkdown(client, filePath) {
   while ((match = trRegex.exec(raw)) !== null) {
     const trContent = match[1];
     
-    // Skip header row
     if (trContent.includes('<th>')) continue;
 
-    // Extract all <td> cells
     const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
     const cells = [];
     let tdMatch;
@@ -136,13 +161,12 @@ async function importMarkdown(client, filePath) {
 }
 
 async function main() {
-  const mdFile = path.resolve(__dirname, 'va-b2c1-1000-part1.md');
+  const mdFile = path.resolve(__dirname, 'va-b2c1-1000-part3.md');
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     
-    // Ensure columns exist
     await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS english_meaning TEXT');
     await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS vietnamese_meaning TEXT');
     await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS synonyms TEXT');
@@ -151,10 +175,10 @@ async function main() {
     const importedCount = await importMarkdown(client, mdFile);
 
     await client.query('COMMIT');
-    console.log(`Markdown import finished. Total words imported for SAT B2C1 1000 P1: ${importedCount}`);
+    console.log(`✅ Cập nhật thành công. Đã import/update ${importedCount} từ cho notebook SAT B2C1 1000 P1.`);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(err);
+    console.error('❌ Có lỗi xảy ra, đã rollback DB:', err);
     process.exitCode = 1;
   } finally {
     client.release();
