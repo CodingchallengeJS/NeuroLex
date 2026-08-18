@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
@@ -238,15 +238,53 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 app.get('/api/notebooks', async (req, res) => {
   try {
     const q = `
-      SELECT n.id, n.title, n.topic, n.difficulty,
-        (SELECT COUNT(*) FROM notebook_vocab nv WHERE nv.notebook_id = n.id) AS vocab_count
+      SELECT n.*, COUNT(nv.vocab_id) AS vocab_count
       FROM notebooks n
+      LEFT JOIN notebook_vocab nv ON nv.notebook_id = n.id
+      GROUP BY n.id
       ORDER BY n.id
     `;
     const r = await pool.query(q);
     res.json({ notebooks: r.rows });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/vocabs/count', authenticateToken, async (req, res) => {
+  try {
+    // Đếm trực tiếp trên bảng vocabulary để đảm bảo các từ là duy nhất
+    const q = 'SELECT COUNT(id)::int AS total_global_words FROM vocabulary';
+    const r = await pool.query(q);
+    
+    res.json({ 
+      total: r.rows[0].total_global_words 
+    });
+  } catch (err) {
+    console.error('Get global vocab count error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/notebooks', async (req, res) => {
+  const { title, topic, difficulty } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: 'Title is required' });
+  }
+  try {
+    const q = `
+      INSERT INTO notebooks (title, topic, difficulty)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `;
+    const r = await pool.query(q, [title, topic || '', difficulty || '']);
+    res.json({ notebook: r.rows[0] });
+  } catch (err) {
+    console.error(err);
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'A notebook with this title already exists' });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -285,6 +323,90 @@ app.get('/api/notebooks/:id/vocabs', async (req, res) => {
   }
 });
 
+app.post('/api/notebooks/:id/vocabs', async (req, res) => {
+  const notebookId = Number(req.params.id);
+  const { word, meaning, english_meaning, vietnamese_meaning, synonyms, phonetic, example } = req.body;
+  if (!Number.isInteger(notebookId)) return res.status(400).json({ error: 'Invalid notebook id' });
+  if (!word) return res.status(400).json({ error: 'Word is required' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Insert or update vocabulary
+    const vocabQ = `
+      INSERT INTO vocabulary (word, meaning, english_meaning, vietnamese_meaning, synonyms, phonetic, example)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (word) DO UPDATE SET
+        meaning = EXCLUDED.meaning,
+        english_meaning = COALESCE(EXCLUDED.english_meaning, vocabulary.english_meaning),
+        vietnamese_meaning = COALESCE(EXCLUDED.vietnamese_meaning, vocabulary.vietnamese_meaning),
+        synonyms = COALESCE(EXCLUDED.synonyms, vocabulary.synonyms),
+        phonetic = COALESCE(EXCLUDED.phonetic, vocabulary.phonetic),
+        example = COALESCE(EXCLUDED.example, vocabulary.example)
+      RETURNING *
+    `;
+    const vocabRes = await client.query(vocabQ, [
+      word.trim(), meaning || '', english_meaning || '', vietnamese_meaning || '', synonyms || '', phonetic || '', example || ''
+    ]);
+    const newVocab = vocabRes.rows[0];
+
+    // Add to notebook (ignore if already added)
+    const linkQ = `
+      INSERT INTO notebook_vocab (notebook_id, vocab_id)
+      VALUES ($1, $2)
+      ON CONFLICT (notebook_id, vocab_id) DO NOTHING
+    `;
+    await client.query(linkQ, [notebookId, newVocab.id]);
+
+    await client.query('COMMIT');
+    res.json({ vocab: newVocab });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+app.put('/api/vocabs/:id', authenticateToken, async (req, res) => {
+  const vocabId = Number(req.params.id);
+  const userId = Number(req.auth.userId);
+  if (userId !== 1) return res.status(403).json({ error: 'Permission denied' });
+  if (!Number.isInteger(vocabId)) return res.status(400).json({ error: 'Invalid vocab id' });
+  
+  const { word, meaning, english_meaning, vietnamese_meaning, synonyms, phonetic, example } = req.body;
+  if (!word) return res.status(400).json({ error: 'Word is required' });
+
+  try {
+    const q = `
+      UPDATE vocabulary 
+      SET 
+        word = $1, 
+        meaning = $2, 
+        english_meaning = $3, 
+        vietnamese_meaning = $4, 
+        synonyms = $5, 
+        phonetic = $6, 
+        example = $7
+      WHERE id = $8
+      RETURNING *
+    `;
+    const r = await pool.query(q, [
+      word.trim(), meaning || '', english_meaning || '', vietnamese_meaning || '', synonyms || '', phonetic || '', example || '', vocabId
+    ]);
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Vocabulary not found' });
+    res.json({ vocab: r.rows[0] });
+  } catch (err) {
+    console.error(err);
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'Word already exists' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/api/repetition/summary', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
   const notebookId = req.query.notebook_id ? Number(req.query.notebook_id) : null;
@@ -296,7 +418,7 @@ app.get('/api/repetition/summary', authenticateToken, async (req, res) => {
           SUM((next_review_at > now() + INTERVAL '1 day' AND next_review_at <= now() + INTERVAL '3 days')::int) AS due_3,
           SUM((next_review_at > now() + INTERVAL '3 days' AND next_review_at <= now() + INTERVAL '7 days')::int) AS due_7,
           SUM((next_review_at > now() + INTERVAL '7 days' AND next_review_at <= now() + INTERVAL '14 days')::int) AS due_14,
-          SUM((mastered)::int) AS mastered
+          SUM((mastered AND next_review_at > now())::int) AS mastered
       FROM user_vocab_progress uvp
     `;
     let vals = [userId];
@@ -484,7 +606,8 @@ app.post('/api/repetition/split-chunk', authenticateToken, async (req, res) => {
 app.post('/api/notebooks/:id/review-step', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
   const notebookId = Number(req.params.id);
-  const { vocab_id, correct_count } = req.body; // 0 for wrong, 2 for right
+  const vocab_id = Number(req.body.vocab_id);
+  const correct_count = req.body.correct_count;
 
   if (!Number.isInteger(notebookId) || !Number.isInteger(vocab_id)) {
     return res.status(400).json({ error: 'Invalid parameters' });
@@ -641,7 +764,7 @@ app.get('/api/quiz/generate', authenticateToken, async (req, res) => {
     } else {
       q += ` WHERE uvp.user_id = $1 AND ${whereCondition} `;
     }
-    q += ` ORDER BY uvp.repetition_level ASC, uvp.next_review_at ASC, v.word ASC LIMIT 10`;
+    q += ` ORDER BY uvp.next_review_at ASC, v.word ASC LIMIT 10`;//` ORDER BY uvp.repetition_level ASC, uvp.next_review_at ASC, v.word ASC LIMIT 10`;
     
     const wordsRes = await pool.query(q, vals);
     const words = wordsRes.rows;

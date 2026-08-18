@@ -2,13 +2,16 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchNotebooks, fetchRepetitionSummary, splitChunk } from '../api';
 import { AuthContext } from '../context/AuthContext';
+import VocabularyProgressChart from './VocabProgressChart'
+//import { PieChart, PieSlice, PieCenter } from "@bklitui/ui/charts";
 
-export default function SpacedRepetitionPanel() {
+export default function SpacedRepetitionPanel({ selected_notebook, all_vocab_count }) {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [notebooks, setNotebooks] = useState([]);
-  const [selectedNb, setSelectedNb] = useState('');
+  const [selectedNb, setSelectedNb] = useState(selected_notebook || '');
   const [summary, setSummary] = useState(null);
+  const [allVocabCount, setAllVocabCount] = useState(all_vocab_count || 0);
 
   useEffect(() => {
     if (user) {
@@ -21,6 +24,18 @@ export default function SpacedRepetitionPanel() {
       fetchRepetitionSummary(selectedNb || null).then(setSummary);
     }
   }, [user, selectedNb]);
+
+  useEffect(() => {
+    if (selected_notebook != selectedNb) {
+      setSelectedNb(selected_notebook);
+    }
+  }, [selected_notebook]);
+
+  useEffect(() => {
+    if (all_vocab_count != allVocabCount ) {
+      setAllVocabCount(all_vocab_count);
+    }
+  }, [all_vocab_count]);
 
   if (!user) {
     return (
@@ -39,20 +54,22 @@ export default function SpacedRepetitionPanel() {
 
   const dueNow = summary?.due_now || 0;
 
+  const total = dueNow + (summary?.due_1 || 0) + (summary?.due_3 || 0) + (summary?.due_7 || 0) + (summary?.due_14 || 0) + (summary?.mastered || 0);
+
   return (
     <div className="sr-panel card">
       <h3 className="sr-title"><i className="fa-solid fa-brain"></i> Spaced Repetition</h3>
       
-      <div className="sr-filter">
+      {/* <div className="sr-filter">
         <select value={selectedNb} onChange={e => setSelectedNb(e.target.value)} className="form-select">
           <option value="">Tất cả sổ tay</option>
           {notebooks.map(nb => (
             <option key={nb.id} value={nb.id}>{nb.title}</option>
           ))}
         </select>
-      </div>
-
-      <div className="sr-buckets">
+      </div> */}
+      <VocabularyProgressChart summary={summary} learnedWords={total} total_words={allVocabCount} selected_nb={selectedNb} onStartReview={true} />
+      {/* <div className="sr-buckets">
         <div className="sr-bucket" onClick={() => handleStartReview('due_now')}>
           <div className="bucket-icon text-danger"><i className="fa-solid fa-fire"></i></div>
           <div className="bucket-info">
@@ -95,7 +112,7 @@ export default function SpacedRepetitionPanel() {
             <span className="count text-mastered">{summary?.mastered || 0} từ</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <button 
         className="btn-primary w-100 mt-3" 

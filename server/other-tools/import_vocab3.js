@@ -114,7 +114,7 @@ async function importMarkdown(client, filePath) {
 
   const raw = fs.readFileSync(filePath, 'utf-8');
   
-  const notebookTitle = 'SAT B2C1 1000 P3';
+  const notebookTitle = 'SAT B2C1 1000 P4';
   const notebookId = await upsertNotebook(client, notebookTitle, 'SAT Vocabulary', 'B2-C1');
 
   const trRegex = /<tr>([\s\S]*?)<\/tr>/g;
@@ -161,7 +161,7 @@ async function importMarkdown(client, filePath) {
 }
 
 async function main() {
-  const mdFile = path.resolve(__dirname, 'va-b2c1-1000-part3.md');
+  const mdFile = path.resolve(__dirname, '../assets/va-b2c1-1000-part4.md');
 
   const client = await pool.connect();
   try {

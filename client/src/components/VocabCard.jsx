@@ -1,4 +1,9 @@
-export default function VocabCard({ vocab }) {
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+
+export default function VocabCard({ vocab, onEdit }) {
+  const { user } = useContext(AuthContext);
+
   const playAudio = () => {
     if (!vocab.word) return;
     const utterance = new SpeechSynthesisUtterance(vocab.word);
@@ -17,9 +22,16 @@ export default function VocabCard({ vocab }) {
     <div className="vocab-card">
       <div className="vc-header">
         <h3 className="vc-word">{vocab.word}</h3>
-        <button className="icon-btn audio-btn" onClick={playAudio} title="Nghe phát âm">
-          <i className="fa-solid fa-volume-high"></i>
-        </button>
+        <div>
+          {Number(user?.id) === 1 && (
+            <button className="icon-btn audio-btn" onClick={() => onEdit && onEdit(vocab)} title="Sửa từ vựng" style={{ marginRight: '8px' }}>
+              <i className="fa-solid fa-pen"></i>
+            </button>
+          )}
+          <button className="icon-btn audio-btn" onClick={playAudio} title="Nghe phát âm">
+            <i className="fa-solid fa-volume-high"></i>
+          </button>
+        </div>
       </div>
       {vocab.phonetic && <div className="vc-phonetic">{vocab.phonetic}</div>}
       
