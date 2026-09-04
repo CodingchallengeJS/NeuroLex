@@ -1,0 +1,20 @@
+.git
+.gitignore
+.gitattributes
+.agents
+
+**/node_modules
+client/dist
+
+# secrets never belong in an image layer
+**/.env
+**/.env.*
+!**/.env.example
+
+client/client_old
+nginx.conf
+nginx-windows.conf
+ROADMAP.md
+a.cpp
+**/__pycache__
+**/*.pyc

@@ -7,7 +7,17 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js",
-    "check": "node --check index.js"
+    "check": "node --check index.js",
+    "migrate": "node migrate.js",
+    "seed": "node seed.js",
+    "db:setup": "node migrate.js && node seed.js",
+    "seed:topics": "node other-tools/import-topics-and-sat-c1c2.js",
+    "seed:magoosh": "node other-tools/import-magoosh.js",
+    "seed:examples": "node other-tools/backfill-magoosh-examples.js",
+    "seed:va": "node other-tools/import-va-b2c1-markdown.js",
+    "seed:cambridge": "node other-tools/import-cleaned-csv.js",
+    "seed:units": "node other-tools/import-vocab4ielts-units.js",
+    "parse:questions": "node other-tools/parse-question-bank.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

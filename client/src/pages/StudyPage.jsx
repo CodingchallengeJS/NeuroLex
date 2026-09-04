@@ -79,20 +79,44 @@ export default function StudyPage() {
 
         {!revealed ? (
           <button className="btn-primary" onClick={handleReveal} style={{ marginTop: '2rem', width: '200px' }}>
-            Xem nghĩa
+            <i className="fa-solid fa-eye" style={{ marginRight: '8px' }}></i> Xem nghĩa
           </button>
         ) : (
-          <div className="study-meanings" style={{ width: '100%', marginTop: '2rem', borderTop: '1px solid var(--line)', paddingTop: '2rem', textAlign: 'center' }}>
-            {word.english_meaning && <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}><span className="lang-tag">EN</span> {word.english_meaning}</p>}
-            {word.vietnamese_meaning && <p style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--text)' }}><span className="lang-tag">VI</span> {word.vietnamese_meaning}</p>}
+          <div className="study-meanings" style={{ width: '100%', marginTop: '2rem', borderTop: '1px solid var(--line)', paddingTop: '1.5rem', textAlign: 'left' }}>
+            {word.english_meaning && <p style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}><span className="lang-tag">EN</span> {word.english_meaning}</p>}
+            {word.vietnamese_meaning && <p style={{ fontSize: '1.1rem', marginBottom: '0.75rem', color: 'var(--text)' }}><span className="lang-tag">VI</span> {word.vietnamese_meaning}</p>}
             {(!word.english_meaning && !word.vietnamese_meaning && word.meaning) && <p style={{ fontSize: '1.1rem', color: 'var(--text)' }}>{word.meaning}</p>}
             
+            {word.example && (
+              <div className="vc-examples" style={{ marginTop: '1rem', background: 'var(--surface-soft)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-soft)', marginBottom: '0.25rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                  <i className="fa-solid fa-quote-left" style={{ marginRight: '6px' }}></i> Ví dụ (Examples)
+                </div>
+                <ul style={{ paddingLeft: '1.25rem', margin: '4px 0', fontStyle: 'italic', color: 'var(--text-soft)' }}>
+                  {word.example.split('\n').map((ex, idx) => (
+                    <li key={idx} className="example-text" style={{ marginBottom: '4px' }}>{ex}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {word.synonyms && (
+              <div className="vc-synonyms" style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-soft)', fontWeight: 600, marginRight: '4px' }}>
+                  <i className="fa-solid fa-tags" style={{ marginRight: '4px' }}></i> Đồng nghĩa:
+                </span>
+                {word.synonyms.split(',').map(s => s.trim()).filter(Boolean).map((syn, idx) => (
+                  <span key={idx} className="chip">{syn}</span>
+                ))}
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
-              <button className="btn-outline" onClick={() => handleResult(0)} disabled={submitting} style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
-                Chưa thuộc
+              <button className="btn-outline" onClick={() => handleResult(0)} disabled={submitting} style={{ borderColor: 'var(--danger)', color: 'var(--danger)', flex: 1, padding: '0.75rem' }}>
+                <i className="fa-solid fa-xmark" style={{ marginRight: '6px' }}></i> Chưa thuộc
               </button>
-              <button className="btn-primary" onClick={() => handleResult(2)} disabled={submitting} style={{ background: 'var(--success)', borderColor: 'var(--success)' }}>
-                Đã thuộc
+              <button className="btn-primary" onClick={() => handleResult(2)} disabled={submitting} style={{ background: 'var(--success)', borderColor: 'var(--success)', flex: 1, padding: '0.75rem' }}>
+                <i className="fa-solid fa-check" style={{ marginRight: '6px' }}></i> Đã thuộc
               </button>
             </div>
           </div>

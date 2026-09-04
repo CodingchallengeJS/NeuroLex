@@ -1,14 +1,6 @@
-require('dotenv').config();
-const { Pool } = require('pg');
+const { createPool } = require('../db');
 
-// Khởi tạo Connection Pool tới PostgreSQL
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
+const pool = createPool();
 
 const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
 const DEEPL_API_URL = "https://api-free.deepl.com/v2/translate";

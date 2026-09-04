@@ -1,5 +1,8 @@
 import csv
 import re
+from pathlib import Path
+
+ASSETS_DIR = Path(__file__).resolve().parent / ".." / "assets"
 
 # Helper function to remove HTML tags and clean up spaces
 def clean_html(raw_html):
@@ -48,7 +51,7 @@ def process_csv(input_file, output_file):
                 raw_meaning = row[4]
                 
                 # 1. Extract Vietnamese Meaning (Usually in blue font)
-                vn_match = re.search(r'<font color=["'']?[^>]+["'']?>\s*\(?(.*?)\)?\s*</font>', raw_meaning, re.IGNORECASE)
+                vn_match = re.search(r"""<font color=["']?[^>]+["']?>\s*\(?(.*?)\)?\s*</font>""", raw_meaning, re.IGNORECASE)
                 if vn_match:
                     vietnamese_meaning = vn_match.group(1).strip()
                     # Remove the Vietnamese part from the raw string
@@ -91,5 +94,10 @@ def process_csv(input_file, output_file):
                 example
             ])
 
-# Run the function (assuming your file is named 'input.csv')
-process_csv('cambridge-ielts-advanced.csv', 'cleaned_vocabulary.csv')
+# Reads assets/cambridge-ielts-advanced.csv, writes assets/cleaned_vocabulary.csv
+# (which import_vocab4.js then loads into the database).
+if __name__ == "__main__":
+    process_csv(
+        ASSETS_DIR / "cambridge-ielts-advanced.csv",
+        ASSETS_DIR / "cleaned_vocabulary.csv",
+    )

@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Scripts that run inside Linux containers must keep LF endings, otherwise the
+# shebang becomes "#!/bin/sh" and Alpine reports "no such file or directory".
+*.sh text eol=lf
+Dockerfile text eol=lf
+docker-entrypoint.sh text eol=lf

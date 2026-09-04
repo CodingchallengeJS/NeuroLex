@@ -1,20 +1,16 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
-
-dotenv.config();
+const { createPool } = require('./db');
 
 const app = express();
 
+// Database settings are validated by db.js, which accepts either DATABASE_URL
+// (managed Postgres) or the five DB_* variables (local development).
 const requiredEnvVars = [
-  'DB_HOST',
-  'DB_PORT',
-  'DB_NAME',
-  'DB_USER',
-  'DB_PASSWORD',
   'AUTH_PEPPER',
   'BCRYPT_ROUNDS',
   'JWT_SECRET',
@@ -31,15 +27,13 @@ if (!Number.isInteger(bcryptRounds) || bcryptRounds < 8) {
   throw new Error('BCRYPT_ROUNDS must be an integer >= 8');
 }
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number.parseInt(process.env.DB_PORT, 10),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD
-});
+const pool = createPool();
 
-app.use(cors());
+// In the Docker/Render image the client is built into client/dist and served
+// from this same origin, so the browser calls /api on its own host and no
+// cross-origin request happens. CLIENT_ORIGIN narrows CORS when the frontend is
+// served separately (e.g. `npm run dev` on :5173).
+app.use(cors(process.env.CLIENT_ORIGIN ? { origin: process.env.CLIENT_ORIGIN } : {}));
 app.use(express.json());
 
 const vocabularySelectFields = `
@@ -459,7 +453,7 @@ app.get('/api/repetition/items', authenticateToken, async (req, res) => {
     due_3: "uvp.next_review_at > now() + INTERVAL '1 day' AND uvp.next_review_at <= now() + INTERVAL '3 days'",
     due_7: "uvp.next_review_at > now() + INTERVAL '3 days' AND uvp.next_review_at <= now() + INTERVAL '7 days'",
     due_14: "uvp.next_review_at > now() + INTERVAL '7 days' AND uvp.next_review_at <= now() + INTERVAL '14 days'",
-    mastered: 'uvp.mastered = TRUE'
+    mastered: 'uvp.mastered = TRUE AND uvp.next_review_at > now()'
   };
 
   const whereCondition = conditions[bucket];
@@ -739,7 +733,7 @@ app.get('/api/quiz/generate', authenticateToken, async (req, res) => {
     due_3: "uvp.next_review_at > now() + INTERVAL '1 day' AND uvp.next_review_at <= now() + INTERVAL '3 days'",
     due_7: "uvp.next_review_at > now() + INTERVAL '3 days' AND uvp.next_review_at <= now() + INTERVAL '7 days'",
     due_14: "uvp.next_review_at > now() + INTERVAL '7 days' AND uvp.next_review_at <= now() + INTERVAL '14 days'",
-    mastered: 'uvp.mastered = TRUE'
+    mastered: 'uvp.mastered = TRUE AND uvp.next_review_at > now()'
   };
 
   const whereCondition = conditions[bucket];
@@ -989,7 +983,20 @@ app.post('/api/quiz/submit', authenticateToken, async (req, res) => {
   }
 });
 
-const port = Number.parseInt(process.env.PORT || '4000', 10);
+/* ---------- STATIC CLIENT (production image) ---------- */
+// Present only when the client has been built (the Docker image does this).
+// In local development Vite serves the frontend on its own port instead.
+const clientDist = path.resolve(__dirname, '../client/dist');
+if (fs.existsSync(path.join(clientDist, 'index.html'))) {
+  app.use(express.static(clientDist));
+  // React Router: anything that is not /api and not a real file gets index.html
+  app.get(/^(?!\/api\/).*/, (_req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+  console.log(`Serving client build from ${clientDist}`);
+}
+
+const port = Number.parseInt(process.env.PORT || '8000', 10);
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on http://0.0.0.0:${port}`);

@@ -142,3 +142,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Database dumps: these contain real user rows and password hashes.
+backup.sql
+*.dump
+*.sql.gz
+dump*.sql

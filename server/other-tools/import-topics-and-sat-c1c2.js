@@ -1,22 +1,22 @@
 const fs = require('fs');
 const path = require('path');
-const { Pool } = require('pg');
-require('dotenv').config();
+const { createPool } = require('../db');
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 5433),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD
-});
+const pool = createPool();
 
+const ASSETS_DIR = path.resolve(__dirname, '../assets');
+
+// Data files live in server/assets/. Bare filenames resolve there; an absolute
+// path or a path relative to the cwd still wins if it points at a real file.
 function resolveDataPath(filePath) {
-  const absoluteFromCwd = path.resolve(process.cwd(), filePath);
-  if (fs.existsSync(absoluteFromCwd)) {
-    return absoluteFromCwd;
+  if (path.isAbsolute(filePath)) {
+    return filePath;
   }
-  return path.resolve(__dirname, filePath);
+  const inAssets = path.resolve(ASSETS_DIR, filePath);
+  if (fs.existsSync(inAssets)) {
+    return inAssets;
+  }
+  return path.resolve(process.cwd(), filePath);
 }
 
 // SỬA ĐỔI 1: Xử lý chữ 'null' text ngay từ bước làm sạch dữ liệu

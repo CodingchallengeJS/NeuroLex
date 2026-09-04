@@ -1,15 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { Pool } = require('pg');
-require('dotenv').config();
+const { createPool } = require('../db');
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 5433),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD
-});
+const pool = createPool();
 
 // SỬA ĐỔI 1: Bắt luôn cả trường hợp chữ 'null' dạng text
 function cleanText(value) {
@@ -107,14 +100,13 @@ function stripHtml(html) {
   return html.replace(/<[^>]*>?/gm, '').trim();
 }
 
-async function importMarkdown(client, filePath) {
+async function importMarkdown(client, filePath, notebookTitle) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found at ${filePath}`);
   }
 
   const raw = fs.readFileSync(filePath, 'utf-8');
-  
-  const notebookTitle = 'SAT B2C1 1000 P4';
+
   const notebookId = await upsertNotebook(client, notebookTitle, 'SAT Vocabulary', 'B2-C1');
 
   const trRegex = /<tr>([\s\S]*?)<\/tr>/g;
@@ -161,7 +153,13 @@ async function importMarkdown(client, filePath) {
 }
 
 async function main() {
-  const mdFile = path.resolve(__dirname, '../assets/va-b2c1-1000-part4.md');
+  // Which part to import: `node import_vocab3.js 2` -> va-b2c1-1000-part2.md
+  const part = Number.parseInt(process.argv[2] || '4', 10);
+  if (!Number.isInteger(part) || part < 1 || part > 4) {
+    throw new Error('Part must be an integer between 1 and 4');
+  }
+  const mdFile = path.resolve(__dirname, `../assets/va-b2c1-1000-part${part}.md`);
+  const notebookTitle = `SAT B2C1 1000 P${part}`;
 
   const client = await pool.connect();
   try {
@@ -172,10 +170,10 @@ async function main() {
     await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS synonyms TEXT');
     await client.query('ALTER TABLE notebook_vocab ADD COLUMN IF NOT EXISTS sort_order INTEGER');
 
-    const importedCount = await importMarkdown(client, mdFile);
+    const importedCount = await importMarkdown(client, mdFile, notebookTitle);
 
     await client.query('COMMIT');
-    console.log(`✅ Cập nhật thành công. Đã import/update ${importedCount} từ cho notebook SAT B2C1 1000 P1.`);
+    console.log(`✅ Cập nhật thành công. Đã import/update ${importedCount} từ cho notebook ${notebookTitle}.`);
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Có lỗi xảy ra, đã rollback DB:', err);
@@ -186,4 +184,7 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => {
+  console.error('❌', err.message);
+  process.exit(1);
+});

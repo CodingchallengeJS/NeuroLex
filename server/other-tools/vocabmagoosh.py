@@ -1,6 +1,10 @@
+import json
+from pathlib import Path
+
 import requests
 from bs4 import BeautifulSoup
-import json
+
+DATA_FILE = Path(__file__).resolve().parent / ".." / "assets" / "magoosh-scraped.json"
 
 def scrape_magoosh_ielts():
     # URL của Magoosh IELTS Flashcards (hoặc các trang tương tự)
@@ -34,9 +38,8 @@ def scrape_magoosh_ielts():
     return new_vocab
 
 def update_json_data(new_topics_dict):
-    # Giả sử file cũ của bạn tên là data.json
     try:
-        with open('data.json', 'r', encoding='utf-8') as f:
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except FileNotFoundError:
         data = {}
@@ -44,7 +47,7 @@ def update_json_data(new_topics_dict):
     # Thêm các chủ đề mới vào
     data.update(new_topics_dict)
 
-    with open('data.json', 'w', encoding='utf-8') as f:
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
     print("Đã cập nhật dữ liệu thành công!")
 

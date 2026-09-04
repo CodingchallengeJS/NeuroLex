@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-neurolex}
+      POSTGRES_USER: ${POSTGRES_USER:-neurolex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-neurolex}
+    ports:
+      # host:container - change the host side if 5432 is already taken
+      - "${DB_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-neurolex} -d ${POSTGRES_DB:-neurolex}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-neurolex}:${POSTGRES_PASSWORD:-neurolex}@db:5432/${POSTGRES_DB:-neurolex}
+      PORT: 8000
+      AUTH_PEPPER: ${AUTH_PEPPER:-change-me-pepper}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}
+      JWT_SECRET: ${JWT_SECRET:-change-me-jwt-secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    ports:
+      - "${APP_HOST_PORT:-8000}:8000"
+
+volumes:
+  pgdata:

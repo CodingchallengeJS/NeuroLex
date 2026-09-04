@@ -1,15 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { Pool } = require('pg');
-require('dotenv').config();
+const { createPool } = require('../db');
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 5433),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD
-});
+const pool = createPool();
 
 function cleanText(value) {
   if (value === null || value === undefined) {
@@ -69,7 +62,7 @@ async function importExamples(client, dirPath) {
 }
 
 async function main() {
-  const magooshDir = path.resolve(__dirname, 'magoosh');
+  const magooshDir = path.resolve(__dirname, '../assets/magoosh');
 
   const client = await pool.connect();
   try {

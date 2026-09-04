@@ -1,16 +1,9 @@
-require('dotenv').config();
+const { createPool } = require('../db');
 const fs = require('fs');
+const path = require('path');
 const csv = require('csv-parser');
-const { Pool } = require('pg');
 
-// Initialize the Database Pool
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 5432), // Standard postgres port is usually 5432
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD
-});
+const pool = createPool();
 
 // Helper function to convert string "null" from CSV to actual JavaScript null
 const parseNull = (val) => {
@@ -43,7 +36,7 @@ async function seedDatabase() {
     const results = [];
     
     // Read the refactored CSV output from the previous step
-    fs.createReadStream('cleaned_vocabulary.csv')
+    fs.createReadStream(path.resolve(__dirname, '../assets/cleaned_vocabulary.csv'))
       .pipe(csv())
       .on('data', (data) => results.push(data))
       .on('end', async () => {

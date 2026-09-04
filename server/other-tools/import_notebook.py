@@ -1,20 +1,41 @@
+"""DEPRECATED: superseded by import_vocab.js (npm run seed:topics).
+
+Kept only as a reference implementation. It imports the same
+assets/vocabularies.json into the same topic notebooks, but does NOT set
+notebook_vocab.sort_order, so the study order will be undefined. Prefer the JS
+importer unless you have a reason not to.
+"""
+
 import json
+import os
+from pathlib import Path
+
 import psycopg2
-from psycopg2.extras import execute_batch
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+
+load_dotenv(dotenv_path=BASE_DIR / ".." / ".env")
 
 # ====== CONFIG DATABASE ======
 DB_CONFIG = {
-    "host": "localhost",
-    "database": "envocab",
-    "user": "postgres",
-    "password": "Quangtrung1234!",
-    "port": 5433
+    "host": os.getenv("DB_HOST", "localhost"),
+    "database": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "port": int(os.getenv("DB_PORT", "5432")),
 }
 
-USER_ID = 1  # đổi nếu cần
+missing = [k for k, v in DB_CONFIG.items() if v in (None, "")]
+if missing:
+    raise SystemExit(
+        "Missing DB settings in server/.env: "
+        + ", ".join("DB_" + k.upper() for k in missing)
+    )
 
 # ====== LOAD JSON ======
-with open("vocabularies.json", "r", encoding="utf-8") as f:
+VOCAB_FILE = BASE_DIR / ".." / "assets" / "vocabularies.json"
+with open(VOCAB_FILE, "r", encoding="utf-8") as f:
     data = json.load(f)
 
 conn = psycopg2.connect(**DB_CONFIG)
@@ -24,13 +45,14 @@ for topic, words in data.items():
     print(f"Processing topic: {topic}")
 
     # 1️⃣ Insert notebook
+    # notebooks has no user_id column; title is the unique key (see createdb.sql).
     cur.execute("""
-        INSERT INTO notebooks (user_id, title, topic, difficulty)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (user_id, topic)
-        DO UPDATE SET title = EXCLUDED.title
+        INSERT INTO notebooks (title, topic, difficulty)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (title)
+        DO UPDATE SET topic = EXCLUDED.topic
         RETURNING id;
-    """, (USER_ID, topic, topic, "medium"))
+    """, (topic, topic, "medium"))
 
     notebook_id = cur.fetchone()[0]
 

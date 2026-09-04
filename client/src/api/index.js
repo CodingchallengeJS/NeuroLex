@@ -1,4 +1,8 @@
-const API_BASE = `http://${window.location.hostname}:8000/api`;
+// Same-origin by default: in the Docker/Render image Express serves this build
+// and the API from one host, so a relative path works over both http and https.
+// For `npm run dev` against a separately running backend, set VITE_API_BASE in
+// client/.env (e.g. VITE_API_BASE=http://localhost:8000/api).
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem('evl_access_token');

@@ -1,0 +1,38 @@
+# Render Blueprint.
+#
+# Creating a web service on its own does NOT create a database. This file does:
+# deploying it as a Blueprint provisions the Postgres instance and the web
+# service together, and wires DATABASE_URL between them automatically.
+#
+# In the Render dashboard: New -> Blueprint -> pick this repo.
+#
+# On first boot the container runs migrations and then the vocabulary seed, so
+# the schema and all notebooks exist without any manual psql step. Later deploys
+# see the notebooks already there and skip the seed.
+services:
+  - type: web
+    name: neurolex
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neurolex-db
+          property: connectionString
+      - key: AUTH_PEPPER
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: BCRYPT_ROUNDS
+        value: "10"
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # Render injects PORT itself; index.js reads it.
+
+databases:
+  - name: neurolex-db
+    databaseName: neurolex
+    user: neurolex
+    plan: free

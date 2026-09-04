@@ -1,7 +1,11 @@
 import os
 import argparse
+from pathlib import Path
+
 import psycopg2
 from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
 
 def add_alternating_vocabs(conn, user_id: int, notebook_a: int, notebook_b: int, chunk_size: int, total_n: int):
     added_words = 0
@@ -32,7 +36,7 @@ def add_alternating_vocabs(conn, user_id: int, notebook_a: int, notebook_b: int,
         raise e
 
 def main():
-    load_dotenv()
+    load_dotenv(dotenv_path=BASE_DIR / ".." / ".env")
 
     parser = argparse.ArgumentParser(description="Script thêm từ vựng xen kẽ từ hai Notebook cho người dùng.")
     
