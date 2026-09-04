@@ -9,12 +9,17 @@
 # On first boot the container runs migrations and then the vocabulary seed, so
 # the schema and all notebooks exist without any manual psql step. Later deploys
 # see the notebooks already there and skip the seed.
+#
+# region must be set on BOTH the service and the database. Render defaults to
+# oregon when it is omitted, and a service can only reach a database in its own
+# region over the internal network.
 services:
   - type: web
     name: neurolex
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
+    region: singapore
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
@@ -36,3 +41,4 @@ databases:
     databaseName: neurolex
     user: neurolex
     plan: free
+    region: singapore
