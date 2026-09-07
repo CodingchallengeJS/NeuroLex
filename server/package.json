@@ -21,6 +21,8 @@
     "seed:tags": "node other-tools/import-tags.js",
     "seed:wordtags": "node other-tools/import-vocab-tags.js",
     "seed:connectives": "node other-tools/import-connectives.js",
+    "seed:questions": "node other-tools/import-question-bank.js",
+    "export:sync": "node other-tools/export-sync.js",
     "parse:questions": "node other-tools/parse-question-bank.js"
   },
   "dependencies": {

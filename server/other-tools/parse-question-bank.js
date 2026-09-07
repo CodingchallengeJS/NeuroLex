@@ -45,12 +45,15 @@ function convertRawTextToJSON(rawText) {
             };
         }
 
+        // Collapse newlines FIRST: the source text wraps mid-phrase, so
+        // "closest in\nmeaning" would otherwise fail the check below and be
+        // misfiled as a general question.
+        questionText = questionText.replace(/\n/g, " ").replace(/\s{2,}/g, " ").trim();
+
         let questionType = "general";
         if (questionText.toLowerCase().includes("closest in meaning")) {
             questionType = "vocabulary";
         }
-
-        questionText = questionText.replace(/\n/g, " ").replace(/\s{2,}/g, " ").trim();
 
         jsonResult.push({
             id: parseInt(questionId, 10),
@@ -76,8 +79,27 @@ function executeParser() {
         const jsonData = convertRawTextToJSON(rawText);
         
         fs.writeFileSync(outputFilePath, jsonData, 'utf8');
-        
-        console.log(`Tiến trình hoàn tất thành công. Dữ liệu đầu ra được lưu tại: ${outputFilePath}`);
+
+        const parsed = JSON.parse(jsonData);
+        const noOptions = parsed.filter((q) => !q.options || Object.keys(q.options).length === 0);
+        const noAnswer = parsed.filter((q) => !q.answer);
+        const byType = parsed.reduce((acc, q) => { acc[q.type] = (acc[q.type] || 0) + 1; return acc; }, {});
+
+        console.log('\nParsed ' + parsed.length + ' questions: ' +
+            Object.entries(byType).map(([k, v]) => k + '=' + v).join(', '));
+        if (noOptions.length > 0) {
+            console.log('WARN  ' + noOptions.length + ' question(s) have no options and cannot be answered: ' +
+                noOptions.map((q) => q.id).join(', '));
+        }
+        if (noAnswer.length > 0) {
+            console.log('WARN  ' + noAnswer.length + ' question(s) have no answer key: ' +
+                noAnswer.map((q) => q.id).join(', '));
+        }
+        if (noOptions.length || noAnswer.length) {
+            console.log('      import-question-bank.js skips these rather than importing them broken.');
+        }
+
+        console.log(`\nTiến trình hoàn tất thành công. Dữ liệu đầu ra được lưu tại: ${outputFilePath}`);
     } catch (error) {
         console.error("Lỗi ngoại lệ trong quá trình thực thi:", error.message);
     }

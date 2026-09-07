@@ -29,7 +29,9 @@ const STEPS = [
   { label: 'Linking words & discourse markers', script: 'import-connectives.js' },
   // Last: classifies every notebook that now exists (names, slugs, tags).
   { label: 'Tag taxonomy + notebook classification', script: 'import-tags.js' },
-  { label: 'Word function tags', script: 'import-vocab-tags.js' }
+  { label: 'Word function tags', script: 'import-vocab-tags.js' },
+  // Needs the full vocabulary present so questions can link to real words.
+  { label: '440 question bank', script: 'import-question-bank.js' }
 ];
 
 function run(step) {

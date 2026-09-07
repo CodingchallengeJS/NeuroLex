@@ -1,0 +1,14 @@
+{
+  "_note": "Surface form -> dictionary headword, for question-bank words the suffix rules in other-tools/lib/lemma.js cannot reach. Only add entries where the mapping is genuinely correct; a wrong mapping silently attaches a question to the wrong word. Keys must be lowercase.",
+  "overrides": {
+    "prior to": "prior",
+    "account for": "account",
+    "give rise to": "give rise to",
+    "far more": "far",
+    "made up of": "comprise",
+    "carried out": "conduct",
+    "brought about": "engender",
+    "set off": "trigger",
+    "put forward": "propose"
+  }
+}

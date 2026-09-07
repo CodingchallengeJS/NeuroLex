@@ -126,17 +126,60 @@ Existing entries (`nevertheless`, `whereas`, `hence`, …) are linked and tagged
 that exam, then title. Groups the 21 Cambridge units, then 12 Magoosh, then the
 7 topic notebooks, then SAT. Untagged (Chunk, user lists) sort last.
 
-## ⬜ Phase D — Question bank import
+## ✅ Phase D — Question bank import (done, live)
 
 `006_question_bank.sql` · `other-tools/import-question-bank.js` ·
-fix `parse-question-bank.js`
+`other-tools/lib/lemma.js` · `assets/lemma-overrides.json`
 
-- Parser: normalise newlines **before** the `type` check (~30 misclassified);
-  report the 11 empty-option and 2 missing-answer questions; trim
-  `"account for "`
-- Tables: `question_sets`, `questions`, `question_vocab`, `user_question_attempts`
-- Link on target **and** the four options: measured **308/440** linkable that
-  way versus 176 on the target alone
+**427 questions imported**, 13 skipped as unusable (11 with no answer options,
+2 whose 3-digit id failed to parse so their answer key could not be matched —
+guessing an answer would teach the wrong thing).
+
+| | |
+|---|---|
+| questions | 427 |
+| question↔vocabulary links | 557 (186 target + 371 option) |
+| questions linked to ≥1 word | **315 / 427** |
+| resolved by | exact 286, lemma 269, override 2 |
+| **touching a word user 1 has studied** | **204** |
+| …of which due for review now | **178** |
+
+Parser bugs fixed first: newlines are now collapsed **before** the type check,
+so `vocabulary` classification went 406 → 436 (matching the 436 prompts that
+actually contain "closest in meaning"); unusable rows are reported rather than
+written out silently.
+
+Linking on the four answer options as well as the quoted target is what makes
+this usable — target alone links 186 questions, adding options reaches 315. It
+is also right pedagogically: in a "closest in meaning" item the correct answer
+*is* a synonym of the target.
+
+### Source-data defect found and fixed
+
+`assets/va-c1c2-500-2023-2026.csv` carried **29 words split by a PDF line wrap**
+(`circumspecti on`, `commensura te`, `disingenuous ly`) plus **46 phonetics**
+broken the same way. Every fresh seed inserted them as garbage rows *alongside*
+the correct spelling. Repaired at source: a fresh seed now produces 0 such rows,
+500 data rows intact. `sync-content.sql` also carries a narrowly-guarded DELETE
+for databases already seeded before the fix.
+
+## ✅ Content sync to Render (done)
+
+`other-tools/export-sync.js` → `server/sql/sync-content.sql`
+
+Re-runnable SQL that brings a deployed database in line with local content.
+Keyed on **natural keys** (`vocabulary.word`, `tags.slug`, `notebooks.slug`),
+never numeric ids, because Render's ids come from its own seed run.
+
+Exports 27 tags, 46 notebook names, 120 notebook tags, 221 word tags, and the
+**1119 vocabulary rows that differ from a pristine seed** — the hand-edited
+DeepL meanings no importer can regenerate. Exports no users, passwords, review
+progress or question attempts.
+
+Verified end to end: applied to a freshly seeded database it converged to match
+live exactly — vocabulary 2870 → 2944, and tags / notebook_tags / vocab_tags /
+notebook names all **IDENTICAL**, with **0 of 2944** meanings differing. Running
+it twice changes nothing.
 
 ## ⬜ Phase E — Question UI + studied-word filter + SRS feedback
 

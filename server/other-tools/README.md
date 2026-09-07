@@ -24,6 +24,11 @@ npm run seed:examples    # node other-tools/backfill-magoosh-examples.js
 npm run seed:va          # node other-tools/import-va-b2c1-markdown.js 4
 npm run seed:cambridge   # node other-tools/import-cleaned-csv.js
 npm run seed:units       # node other-tools/import-vocab4ielts-units.js
+npm run seed:connectives # node other-tools/import-connectives.js
+npm run seed:tags        # node other-tools/import-tags.js
+npm run seed:wordtags    # node other-tools/import-vocab-tags.js
+npm run seed:questions   # node other-tools/import-question-bank.js
+npm run export:sync      # node other-tools/export-sync.js
 npm run parse:questions  # node other-tools/parse-question-bank.js
 ```
 
@@ -118,6 +123,54 @@ chưa có trong bảng `vocabulary` sẽ được tạo mới (chỉ có chữ, 
 
 > `assets/vocab4ielts-units.json` được **khôi phục từ database** ngày 2026-09-04, vì
 > file gốc `cambridge-vocab4ielts-advanced.txt` chưa bao giờ được commit.
+
+### `import-question-bank.js`
+
+| | |
+|---|---|
+| Nguồn | `assets/440-wic-question.json` (+ `assets/lemma-overrides.json`) |
+| Tạo | 427 câu hỏi trong `questions`, liên kết tới từ vựng qua `question_vocab` |
+| Chạy lại | An toàn (xây lại liên kết của từng câu) |
+
+Bỏ qua 13 câu không dùng được (11 câu thiếu đáp án lựa chọn, 2 câu thiếu đáp án
+đúng). Liên kết cả **từ được hỏi** lẫn **4 phương án**: chỉ dùng từ được hỏi thì
+liên kết được 186 câu, thêm phương án thì lên 315. Dạng biến cách (`prized`,
+`overtaken`) được đưa về dạng nguyên thể bằng `lib/lemma.js`.
+
+Từ nào không khớp sẽ được báo ra chứ **không tự tạo mới** — phần lớn là từ
+trung cấp không thuộc danh sách C1-C2. Muốn sửa tay thì thêm vào
+`assets/lemma-overrides.json`.
+
+### `export-sync.js [--reference-db <db>] [--out <file>]`
+
+Xuất nội dung từ DB **hiện tại** ra một file SQL chạy lại được, để đồng bộ sang
+bản deploy (Render).
+
+```bash
+npm run export:sync                                    # xuất toàn bộ
+npm run export:sync -- --reference-db neurolex_pristine # chỉ xuất phần đã sửa tay
+```
+
+Xuất: `tags`, `notebook_tags`, `vocab_tags`, tên/slug sổ tay, và các trường nghĩa
+của `vocabulary` (nơi chứa bản dịch DeepL bạn sửa tay — importer không tái tạo được).
+
+**Không** xuất: user, mật khẩu, tiến độ ôn tập, lịch sử trả lời câu hỏi.
+
+File sinh ra có sẵn `SET client_encoding = 'UTF8';` ở đầu. Trên Windows, psql
+mặc định dùng codepage của console (WIN1252) nên sẽ đọc sai phần tiếng Việt và
+ký hiệu IPA rồi báo lỗi `character with byte sequence 0x8f`. Dòng SET đó khắc
+phục, không cần đặt biến môi trường gì thêm.
+
+Mọi thứ được khớp theo **khoá tự nhiên** (`word`, `slug`), không phải id — vì id
+trên Render do seed ở đó sinh ra, không trùng với máy bạn.
+
+`--reference-db` trỏ tới một DB vừa seed sạch trên cùng server; khi có, chỉ những
+dòng `vocabulary` **khác** bản seed mới được xuất. Tạo bằng:
+
+```bash
+createdb neurolex_pristine
+DATABASE_URL=postgres://user:pass@localhost:5432/neurolex_pristine npm run db:setup
+```
 
 ### `translate-api.js`
 
