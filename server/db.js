@@ -1,5 +1,5 @@
 const path = require('path');
-const { Pool } = require('pg');
+const { Pool, Client } = require('pg');
 
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
@@ -43,8 +43,45 @@ function poolConfig() {
   };
 }
 
+// Neon's pooled endpoint (pgbouncer) hands out connections with an EMPTY
+// search_path, so unqualified table names resolve to nothing and every query
+// looks like "relation does not exist" even though the tables are right there
+// in public. Its direct endpoint is unaffected, which is what makes it
+// confusing: `\dt` shows nothing while `\dt public.*` lists everything.
+//
+// It has to be a SET after connecting, not `options=-c search_path=public` in
+// the URL - the pooler rejects that outright:
+//   ERROR: unsupported startup parameter in options: search_path
+//
+// Harmless everywhere else: on Render and local Postgres this just restates
+// what the default already resolves to, so one code path covers all three.
+const SEARCH_PATH = process.env.DB_SEARCH_PATH || 'public';
+
+/**
+ * Applies the search_path as part of connecting, so a connection is never
+ * handed out before it is set.
+ *
+ * Doing this on the pool's 'connect' event instead would race with the caller's
+ * first query on the same client - node-postgres warns about exactly that
+ * ("Calling client.query() when the client is already executing a query is
+ * deprecated") and will reject it outright in pg@9.
+ */
+class SearchPathClient extends Client {
+  connect(callback) {
+    const applyPath = () => super.query(`SET search_path TO ${SEARCH_PATH}`);
+
+    if (callback) {
+      return super.connect((err) => {
+        if (err) return callback(err);
+        applyPath().then(() => callback()).catch(callback);
+      });
+    }
+    return super.connect().then(applyPath).then(() => undefined);
+  }
+}
+
 function createPool(extra = {}) {
-  return new Pool({ ...poolConfig(), ...extra });
+  return new Pool({ Client: SearchPathClient, ...poolConfig(), ...extra });
 }
 
 // Where the database lives, without ever printing the password.

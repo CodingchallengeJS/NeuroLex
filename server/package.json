@@ -23,6 +23,7 @@
     "seed:connectives": "node other-tools/import-connectives.js",
     "seed:questions": "node other-tools/import-question-bank.js",
     "export:sync": "node other-tools/export-sync.js",
+    "db:copy": "node other-tools/copy-database.js",
     "parse:questions": "node other-tools/parse-question-bank.js"
   },
   "dependencies": {
