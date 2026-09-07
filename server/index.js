@@ -145,6 +145,37 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+// Uptime check, deliberately OUTSIDE /api so it is easy to point a monitor at.
+// Registered before the SPA fallback further down, which would otherwise answer
+// /health with index.html.
+//
+// Doubles as a keep-warm target: Render's free tier spins an instance down
+// after ~15 minutes idle, and a request every 10 minutes prevents that.
+// 200 when the database answers, 503 when it does not, so a monitor reports a
+// broken database as down instead of quietly showing green.
+app.get('/health', async (_req, res) => {
+  const startedAt = Date.now();
+  let database = 'up';
+
+  try {
+    await pool.query('SELECT 1');
+  } catch (error) {
+    database = 'down';
+    console.error('Health check: database unreachable:', error.message);
+  }
+
+  // no-store so a proxy cannot serve a cached 200 and hide a real outage,
+  // and so the ping actually reaches the instance and keeps it awake.
+  res.set('Cache-Control', 'no-store');
+  res.status(database === 'up' ? 200 : 503).json({
+    status: database === 'up' ? 'ok' : 'degraded',
+    database,
+    uptimeSeconds: Math.round(process.uptime()),
+    responseMs: Date.now() - startedAt,
+    checkedAt: new Date().toISOString()
+  });
+});
+
 app.post('/api/auth/register', authLimiter, async (req, res) => {
   const { username, email, password } = req.body;
 

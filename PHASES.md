@@ -176,10 +176,56 @@ Exports 27 tags, 46 notebook names, 120 notebook tags, 221 word tags, and the
 DeepL meanings no importer can regenerate. Exports no users, passwords, review
 progress or question attempts.
 
+Two bugs found by running it for real rather than assuming:
+
+1. **Encoding.** psql on Windows defaults `client_encoding` to the console
+   codepage (WIN1252) and aborted on the first Vietnamese character
+   (`byte sequence 0x8f`). The file now begins with `SET client_encoding =
+   'UTF8';`, so it works whatever codepage the caller has.
+2. **Notebook tags silently did not apply.** The file matched notebooks on
+   `slug`, but a deployment seeded before P2 has `slug = NULL` and the old
+   names - because `seed.js` skips entirely when notebooks already exist, so
+   `import-tags.js` never ran there. Word tags synced (they join on `word`)
+   while notebook tags inserted 0 rows. The file now matches on slug **or** a
+   legacy title, sets the slug, and renames in the same statement. Reproduced
+   on a simulated pre-P2 database: notebook_tags 0 -> 120.
+
 Verified end to end: applied to a freshly seeded database it converged to match
 live exactly — vocabulary 2870 → 2944, and tags / notebook_tags / vocab_tags /
 notebook names all **IDENTICAL**, with **0 of 2944** meanings differing. Running
 it twice changes nothing.
+
+## ✅ Deploy fixes (done)
+
+### Seed crashed on Render with a duplicate-title error
+
+`upsertNotebook` matched a notebook by slug, then by its **canonical** title.
+A database seeded before P2 has neither — `seed.js` skips entirely when
+notebooks already exist, so `import-tags.js` never ran there and the notebooks
+are still `Ielts Common 1` with `slug NULL`. The importer therefore inserted a
+*second* notebook under the new name, and the later rename collided:
+
+```
+duplicate key value violates unique constraint "idx_notebooks_title_global"
+Key (title)=(IELTS Magoosh — Common 1) already exists.
+```
+
+Two fixes: `upsertNotebook` now also adopts a slug-less row under its **legacy**
+title (cause), and `import-tags.js` merges any duplicate a previous run already
+created — moving word links, tags and each user's place in the notebook onto the
+canonical row before deleting the old one (damage).
+
+Reproduced on a copy of Render's exact state (58 notebooks, 12 duplicate pairs)
+and verified repaired: **58 → 46 notebooks**, 0 legacy names, 0 missing slugs,
+word links intact, 120 notebook tags. A second run merges nothing.
+
+### `/health` endpoint
+
+Outside `/api` and registered before the SPA fallback, which would otherwise
+answer it with `index.html`. Returns `200` with uptime and response time while
+the database answers, `503 degraded` when it does not, and sets
+`Cache-Control: no-store` so a proxy cannot serve a cached 200 over a real
+outage. Both paths tested.
 
 ## ⬜ Phase E — Question UI + studied-word filter + SRS feedback
 

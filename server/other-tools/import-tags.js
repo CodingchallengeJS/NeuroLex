@@ -12,7 +12,7 @@
  * Idempotent: re-running re-applies the same names, slugs and tags.
  */
 const { createPool } = require('../db');
-const { slugify } = require('./lib/notebooks');
+const { slugify, legacyTitles } = require('./lib/notebooks');
 const { ensureTags } = require('./lib/tags');
 
 const pool = createPool();
@@ -130,6 +130,42 @@ async function main() {
          AND NOT EXISTS (SELECT 1 FROM notebook_vocab WHERE notebook_id = notebooks.id)`
     );
     if (dropped.rowCount > 0) console.log('Removed the empty vocab4ielts-other notebook');
+
+    // Heal databases that already grew a duplicate: an older seed inserted the
+    // canonically-named notebook next to the legacy-named one, so renaming the
+    // legacy one now collides. Fold the legacy row into the canonical one and
+    // drop it, keeping every word link and every user's place in the notebook.
+    const merged = [];
+    const canonical = await client.query(
+      'SELECT id, title, slug FROM notebooks WHERE owner_user_id IS NULL AND slug IS NOT NULL'
+    );
+    for (const keep of canonical.rows) {
+      const olds = await client.query(
+        `SELECT id, title FROM notebooks
+         WHERE owner_user_id IS NULL AND id <> $1 AND slug IS NULL AND title = ANY($2)`,
+        [keep.id, legacyTitles(keep.title)]
+      );
+      for (const dup of olds.rows) {
+        await client.query(
+          `INSERT INTO notebook_vocab (notebook_id, vocab_id, sort_order)
+           SELECT $1, vocab_id, sort_order FROM notebook_vocab WHERE notebook_id = $2
+           ON CONFLICT DO NOTHING`, [keep.id, dup.id]);
+        await client.query(
+          `INSERT INTO user_notebook_progress (user_id, notebook_id, current_word_id)
+           SELECT user_id, $1, current_word_id FROM user_notebook_progress WHERE notebook_id = $2
+           ON CONFLICT DO NOTHING`, [keep.id, dup.id]);
+        await client.query(
+          `INSERT INTO notebook_tags (notebook_id, tag_id)
+           SELECT $1, tag_id FROM notebook_tags WHERE notebook_id = $2
+           ON CONFLICT DO NOTHING`, [keep.id, dup.id]);
+        await client.query('DELETE FROM notebooks WHERE id = $1', [dup.id]);
+        merged.push(`${dup.title}  ->  ${keep.title}`);
+      }
+    }
+    if (merged.length > 0) {
+      console.log(`Merged ${merged.length} duplicate notebook(s) left by an older seed:`);
+      merged.forEach((line) => console.log(`  ${line}`));
+    }
 
     const notebooks = await client.query(
       'SELECT id, title, slug FROM notebooks WHERE owner_user_id IS NULL ORDER BY id'

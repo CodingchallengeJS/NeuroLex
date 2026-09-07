@@ -19,8 +19,30 @@ function slugify(text) {
 }
 
 /**
+ * Names a notebook may still carry on a database seeded before P2 renamed
+ * things. seed.js skips entirely when notebooks already exist, so a deployment
+ * from before the rename never ran import-tags.js: its notebooks are still
+ * called "Ielts Hard 2" with slug NULL.
+ *
+ * Without this, upsertNotebook would find neither the slug nor the canonical
+ * title, insert a SECOND notebook under the new name, and import-tags.js would
+ * then fail renaming the old one onto a title that now exists.
+ */
+function legacyTitles(title) {
+  const out = [title];
+  let m;
+  if ((m = title.match(/^IELTS Magoosh — (.+)$/))) out.push(`Ielts ${m[1]}`);
+  if ((m = title.match(/^SAT B2-C1 1000 — Part (\d+)$/))) out.push(`SAT B2C1 1000 P${m[1]}`);
+  if ((m = title.match(/^Cambridge IELTS Advanced — Unit (\d+): (.+)$/))) {
+    out.push(`vocab4ielt-${Number(m[1])} ${m[2]}`);
+  }
+  return [...new Set(out)];
+}
+
+/**
  * Finds or creates a built-in (owner_user_id IS NULL) notebook and returns its id.
- * Never renames an existing notebook - import-tags.js owns renaming.
+ * Adopts a pre-slug row by title (canonical or legacy) and stamps the slug on it,
+ * rather than creating a duplicate. Renaming itself stays with import-tags.js.
  */
 async function upsertNotebook(client, { slug, title, topic, difficulty }) {
   if (!slug) throw new Error(`upsertNotebook needs a slug (title: ${title})`);
@@ -31,10 +53,12 @@ async function upsertNotebook(client, { slug, title, topic, difficulty }) {
   );
   if (bySlug.rowCount > 0) return bySlug.rows[0].id;
 
-  // Pre-slug row, or one this importer created before: adopt it.
+  // Pre-slug row under either its current or its old name: adopt it.
   const byTitle = await client.query(
-    'SELECT id FROM notebooks WHERE title = $1 AND owner_user_id IS NULL LIMIT 1',
-    [title]
+    `SELECT id FROM notebooks
+     WHERE title = ANY($1) AND owner_user_id IS NULL AND slug IS NULL
+     ORDER BY id LIMIT 1`,
+    [legacyTitles(title)]
   );
   if (byTitle.rowCount > 0) {
     await client.query('UPDATE notebooks SET slug = $1 WHERE id = $2', [slug, byTitle.rows[0].id]);
@@ -55,4 +79,4 @@ async function upsertNotebook(client, { slug, title, topic, difficulty }) {
   return created.rows[0].id;
 }
 
-module.exports = { slugify, upsertNotebook };
+module.exports = { slugify, upsertNotebook, legacyTitles };

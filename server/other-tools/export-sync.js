@@ -70,6 +70,23 @@ async function loadReferenceVocabulary() {
   }
 }
 
+/**
+ * Names a notebook may still be under on a target that has not run
+ * import-tags.js. A deployment seeded before P2 skips the whole seed (seed.js
+ * bails when notebooks already exist), so it never got slugs or the renames -
+ * matching on slug alone would silently find nothing there.
+ */
+function legacyTitles(title) {
+  const out = [title];
+  let m;
+  if ((m = title.match(/^IELTS Magoosh — (.+)$/))) out.push(`Ielts ${m[1]}`);
+  if ((m = title.match(/^SAT B2-C1 1000 — Part (\d+)$/))) out.push(`SAT B2C1 1000 P${m[1]}`);
+  if ((m = title.match(/^Cambridge IELTS Advanced — Unit (\d+): (.+)$/))) {
+    out.push(`vocab4ielt-${Number(m[1])} ${m[2]}`);
+  }
+  return [...new Set(out)];
+}
+
 function differs(row, ref) {
   if (!ref) return true;
   return MEANING_FIELDS.some((f) => (row[f] || '') !== (ref[f] || ''));
@@ -136,13 +153,20 @@ async function main() {
        FROM notebooks WHERE owner_user_id IS NULL AND slug IS NOT NULL ORDER BY slug`
     )).rows;
     stats.notebooks = notebooks.length;
-    L.push('-- ' + notebooks.length + ' built-in notebooks: canonical naming ------------------');
-    L.push('-- Matched on slug. A notebook missing on the target is left alone: the');
-    L.push('-- seed there creates it, this only corrects naming and description.');
+    L.push('-- ' + notebooks.length + ' built-in notebooks: slug + canonical naming ---------');
+    L.push('-- Matched on slug, OR on a legacy title when the target has no slug yet.');
+    L.push('-- That second case matters: a deployment seeded before P2 never ran the');
+    L.push('-- classification pass, so its notebooks are still called "Ielts Hard 2"');
+    L.push('-- with slug NULL. Without this the tag assignments below join on a slug');
+    L.push('-- that does not exist and silently insert nothing.');
+    L.push('-- A notebook missing entirely is left alone; the seed there creates it.');
     for (const nb of notebooks) {
-      L.push(`UPDATE notebooks SET title = ${lit(nb.title)}, topic = ${lit(nb.topic)}, ` +
-             `difficulty = ${lit(nb.difficulty)}, description = ${lit(nb.description)} ` +
-             `WHERE slug = ${lit(nb.slug)} AND owner_user_id IS NULL;`);
+      const titles = legacyTitles(nb.title).map(lit).join(', ');
+      L.push(`UPDATE notebooks SET slug = ${lit(nb.slug)}, title = ${lit(nb.title)}, ` +
+             `topic = ${lit(nb.topic)}, difficulty = ${lit(nb.difficulty)}, ` +
+             `description = ${lit(nb.description)} ` +
+             `WHERE owner_user_id IS NULL AND (slug = ${lit(nb.slug)} ` +
+             `OR (slug IS NULL AND title IN (${titles})));`);
     }
     L.push('');
 
