@@ -1,5 +1,16 @@
--- create_schema.sql
--- WARNING: this will DROP schema public (remove if you don't want)
+-- reset-dev-db.sql
+--
+-- ============================ DESTRUCTIVE =============================
+-- This DROPS the entire public schema and everything in it: every user,
+-- every word, every bit of review progress. There is no undo.
+--
+-- It is NOT how you set up a database. Use `npm run migrate` for that -
+-- migrations are additive and safe to run on a database with real data.
+--
+-- Only reach for this when you deliberately want a clean local database:
+--   psql -U <user> -d <db> -f server/reset-dev-db.sql && npm run db:setup
+-- ======================================================================
+
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
 

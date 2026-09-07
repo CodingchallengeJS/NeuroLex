@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createPool } = require('../db');
+const { upsertNotebook } = require('./lib/notebooks');
 
 const pool = createPool();
 
@@ -27,17 +28,6 @@ function normalizeSynonyms(value) {
   return cleaned;
 }
 
-async function upsertNotebook(client, title, topic, difficulty) {
-  await client.query(
-    `INSERT INTO notebooks (title, topic, difficulty)
-     VALUES ($1,$2,$3)
-     ON CONFLICT (title) DO NOTHING`,
-    [title, topic, difficulty]
-  );
-
-  const notebookRes = await client.query('SELECT id FROM notebooks WHERE title = $1 LIMIT 1', [title]);
-  return notebookRes.rows[0].id;
-}
 
 // SỬA ĐỔI 2: Cập nhật SQL thông minh hơn
 async function upsertVocabulary(client, item) {
@@ -100,14 +90,19 @@ function stripHtml(html) {
   return html.replace(/<[^>]*>?/gm, '').trim();
 }
 
-async function importMarkdown(client, filePath, notebookTitle) {
+async function importMarkdown(client, filePath, notebookTitle, notebookSlug) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found at ${filePath}`);
   }
 
   const raw = fs.readFileSync(filePath, 'utf-8');
 
-  const notebookId = await upsertNotebook(client, notebookTitle, 'SAT Vocabulary', 'B2-C1');
+  const notebookId = await upsertNotebook(client, {
+    slug: notebookSlug,
+    title: notebookTitle,
+    topic: 'SAT Vocabulary',
+    difficulty: 'B2-C1'
+  });
 
   const trRegex = /<tr>([\s\S]*?)<\/tr>/g;
   let match;
@@ -159,18 +154,16 @@ async function main() {
     throw new Error('Part must be an integer between 1 and 4');
   }
   const mdFile = path.resolve(__dirname, `../assets/va-b2c1-1000-part${part}.md`);
-  const notebookTitle = `SAT B2C1 1000 P${part}`;
+  const notebookTitle = `SAT B2-C1 1000 — Part ${part}`;
+  const notebookSlug = `sat-b2c1-1000-part-${part}`;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
-    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS english_meaning TEXT');
-    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS vietnamese_meaning TEXT');
-    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS synonyms TEXT');
-    await client.query('ALTER TABLE notebook_vocab ADD COLUMN IF NOT EXISTS sort_order INTEGER');
 
-    const importedCount = await importMarkdown(client, mdFile, notebookTitle);
+    // Schema is owned by server/migrations/ - run `npm run migrate` first.
+
+    const importedCount = await importMarkdown(client, mdFile, notebookTitle, notebookSlug);
 
     await client.query('COMMIT');
     console.log(`✅ Cập nhật thành công. Đã import/update ${importedCount} từ cho notebook ${notebookTitle}.`);

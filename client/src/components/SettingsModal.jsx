@@ -1,8 +1,18 @@
 import { useContext } from 'react';
 import { ThemeContext } from '../context/ThemeContext';
 
+const THEMES = [
+  { value: 'light', icon: 'fa-sun', label: 'Sáng' },
+  { value: 'dark', icon: 'fa-moon', label: 'Tối' },
+  { value: 'system', icon: 'fa-desktop', label: 'Hệ thống' }
+];
+
 export default function SettingsModal({ onClose }) {
   const { theme, setTheme } = useContext(ThemeContext);
+
+  // Unknown/unset theme falls back to the first segment so the thumb always
+  // has somewhere to sit.
+  const index = Math.max(0, THEMES.findIndex(t => t.value === theme));
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -15,24 +25,25 @@ export default function SettingsModal({ onClose }) {
           <div className="setting-group">
             <label>Giao diện</label>
             <div className="theme-toggle">
-              <button 
-                className={`btn-outline ${theme === 'light' ? 'active' : ''}`}
-                onClick={() => setTheme('light')}
+              <div
+                className="segmented segmented-full"
+                role="group"
+                aria-label="Giao diện"
+                style={{ '--seg-count': THEMES.length, '--seg-index': index }}
               >
-                <i className="fa-solid fa-sun"></i> Sáng
-              </button>
-              <button 
-                className={`btn-outline ${theme === 'dark' ? 'active' : ''}`}
-                onClick={() => setTheme('dark')}
-              >
-                <i className="fa-solid fa-moon"></i> Tối
-              </button>
-              <button 
-                className={`btn-outline ${theme === 'system' ? 'active' : ''}`}
-                onClick={() => setTheme('system')}
-              >
-                <i className="fa-solid fa-desktop"></i> Hệ thống
-              </button>
+                <span className="segmented-thumb" aria-hidden="true" />
+                {THEMES.map(t => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    className={`segmented-btn ${theme === t.value ? 'active' : ''}`}
+                    onClick={() => setTheme(t.value)}
+                    aria-pressed={theme === t.value}
+                  >
+                    <i className={`fa-solid ${t.icon}`}></i> {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

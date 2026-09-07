@@ -159,8 +159,8 @@ CMD ["node", "index.js"]
 - [x] Bảng `schema_migrations(version TEXT PRIMARY KEY, applied_at TIMESTAMP)`
 - [x] `server/migrate.js`: đọc thư mục, chạy file chưa có trong `schema_migrations`, trong 1 transaction
 - [x] `add_vocab_to_review()` — hàm plpgsql này chỉ tồn tại trong DB trên máy, chưa bao giờ có trong repo (phát hiện khi làm P0, đã dump vào cuối `createdb.sql`). Khi tách migration nhớ đưa nó thành 1 file riêng, và **rà lại xem còn object nào chỉ sống trong DB local** (trigger, view, index tự tạo tay)
-- [ ] Chuyển `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` đang rải rác trong `import_vocab*.js` (ví dụ `import_vocab3.js:170-173`) vào migration — script import không nên tự đổi schema
-- [ ] Giữ `createdb.sql` như `scripts/reset-dev-db.sql` với cảnh báo rõ ràng
+- [x] Chuyển `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` đang rải rác trong `import_vocab*.js` (ví dụ `import_vocab3.js:170-173`) vào migration — script import không nên tự đổi schema
+- [x] Đổi `createdb.sql` → `server/reset-dev-db.sql` với cảnh báo rõ ràng
 
 ### P1.5 Seed dữ liệu tự động, idempotent
 
@@ -259,9 +259,9 @@ Một sổ tay giờ có nhiều tag (`exam:ielts` + `source:magoosh` + `level:c
 - [ ] `NotebookGrid.jsx`: hiện nhiều chip tag, màu theo `kind`, thay 1 badge `difficulty` như hiện nay
 - [ ] Thanh lọc tag ở đầu `NotebooksPage` + gom nhóm theo `exam`
 - [ ] `CreateNotebookModal.jsx`: chọn tag thay vì gõ tự do `topic`/`difficulty` (nguồn gốc của mớ hỗn độn)
-- [ ] Sửa `POST /api/notebooks` (`index.js:270`) — hiện **không có `authenticateToken`**, ai cũng tạo được sổ tay toàn cục; gắn `owner_user_id = req.auth.userId`
+- [x] Sửa `POST /api/notebooks` (`index.js:270`) — hiện **không có `authenticateToken`**, ai cũng tạo được sổ tay toàn cục; gắn `owner_user_id = req.auth.userId`
 - [ ] Đổi tên / xoá / sắp xếp lại sổ tay (hiện chưa có `PUT`/`DELETE /api/notebooks/:id`)
-- [ ] Sổ tay `Chunk` (`index.js:552-606`) hiện là **toàn cục dùng chung cho mọi user** — user B ghi đè chunk của user A. Phải gắn `owner_user_id` và tìm theo `(owner_user_id, slug)`
+- [x] Sổ tay `Chunk` (`index.js:552-606`) hiện là **toàn cục dùng chung cho mọi user** — user B ghi đè chunk của user A. Phải gắn `owner_user_id` và tìm theo `(owner_user_id, slug)`
 
 ---
 
@@ -399,24 +399,36 @@ Bộ lọc nên có: chỉ từ đã thuộc (`mastered`), chỉ từ đang đ�
 
 ## P4 — Lỗi và cải tiến phát hiện khi đọc code
 
+> **Đợt vá trước khi deploy — 2026-09-05.** Roadmap này viết khi app còn chạy
+> localhost. Giờ nó sắp lên internet, nên những lỗi chỉ nguy hiểm khi công khai
+> đã được ưu tiên sửa trước: 2 route ghi không auth, rate limit, `Chunk` dùng
+> chung, kiểu ID sai. Đã kiểm chứng bằng 15 test tích hợp chạy thật với 2 user.
+> Migration 003 đã chạy trên DB thật: 48 sổ tay / 2869 từ / 4 user / 1292 dòng
+> tiến độ giữ nguyên.
+>
+> **Bổ sung 2026-09-06:** quyền sửa từ vựng chuyển từ `userId !== 1` sang cờ
+> `users.is_admin` (migration 004) + biến `ADMIN_EMAIL` + `npm run admin`.
+> 12 test nữa xác nhận: người đăng ký đầu tiên **không** tự có quyền, non-admin
+> gọi thẳng API bị 403, thu hồi quyền có hiệu lực ngay với token cũ.
+
 ### Lỗi cần sửa
 
 | Nơi | Vấn đề |
 |---|---|
-| `NotebooksPage.jsx:48-52` | `useEffect` **không có dependency array** → gọi `fetchVocabCount()` lại sau **mỗi lần render**. Thêm `[activeNb]` |
-| `NotebooksPage.jsx:78` | `n.id.toString() === activeNb` so sánh string với giá trị `setActiveNb(nb.id)` — mong manh, phụ thuộc việc `pg` trả `BIGSERIAL` dưới dạng string. Ép kiểu một chỗ duy nhất |
-| `index.js:270` | `POST /api/notebooks` **không xác thực** — ai cũng tạo được sổ tay toàn cục |
-| `index.js:326` | `POST /api/notebooks/:id/vocabs` **không xác thực** — ai cũng thêm từ vào sổ tay của người khác |
-| `index.js:373` | `PUT /api/vocabs/:id` có auth, nhưng sửa `vocabulary` toàn cục → 1 user sửa nghĩa là **mọi người** thấy. Cần bảng `user_vocab_override` hoặc chỉ cho chủ sở hữu sửa |
-| `index.js:552` | Sổ tay `Chunk` dùng chung toàn hệ thống (đã nêu ở P2.4) |
-| `createdb.sql:69-74` | `user_notebook_progress` dùng `INTEGER` trong khi `users.id`/`notebooks.id` là `BIGSERIAL` — sai kiểu, sẽ tràn |
+| ~~`NotebooksPage.jsx:48-52`~~ ✅ | `useEffect` **không có dependency array** → gọi `fetchVocabCount()` lại sau **mỗi lần render**. Thêm `[activeNb]` |
+| ~~`NotebooksPage.jsx:78`~~ ✅ | `n.id.toString() === activeNb` so sánh string với giá trị `setActiveNb(nb.id)` — mong manh, phụ thuộc việc `pg` trả `BIGSERIAL` dưới dạng string. Ép kiểu một chỗ duy nhất |
+| ~~`index.js:270`~~ ✅ | `POST /api/notebooks` **không xác thực** — ai cũng tạo được sổ tay toàn cục |
+| ~~`index.js:326`~~ ✅ | `POST /api/notebooks/:id/vocabs` **không xác thực** — ai cũng thêm từ vào sổ tay của người khác |
+| ~~`index.js:373`~~ ✅ | `PUT /api/vocabs/:id` sửa `vocabulary` toàn cục — **đây là cố ý**: để sửa lỗi dịch DeepL và nghĩa thứ 2 của từ SAT. Server đã chặn sẵn bằng `userId !== 1`. Đã đổi sang cờ `users.is_admin` vì `id = 1` chỉ là **thứ tự đăng ký** — trên deploy mới, người lạ đăng ký trước sẽ thành id 1 |
+| ~~`index.js:552`~~ ✅ | Sổ tay `Chunk` dùng chung toàn hệ thống (đã nêu ở P2.4) |
+| ~~`createdb.sql:69-74`~~ ✅ | `user_notebook_progress` dùng `INTEGER` trong khi `users.id`/`notebooks.id` là `BIGSERIAL` — sai kiểu, sẽ tràn |
 | `index.js:731` | `/api/quiz/generate` chạy **2 query trong vòng lặp cho mỗi từ** (N+1, tới 20 query cho 10 từ). Gộp thành 1 query dùng `LATERAL` |
-| `a.cpp` | File rỗng lạc trong repo gốc — xoá |
+| ~~`a.cpp`~~ ✅ | File rỗng lạc trong repo gốc — đã xoá |
 
 ### Thiếu vắng
 
 - [ ] **Không có test nào**. `package.json` gốc còn ghi `"test": "echo \"Error: no test specified\" && exit 1"`. Ít nhất phải test `applyQuizResult` (`index.js:890`) — đây là trái tim thuật toán SRS
-- [ ] **Không có rate limit** trên `/api/auth/login` → brute-force thoải mái. Thêm `express-rate-limit`
+- [x] **Không có rate limit** trên `/api/auth/login` → brute-force thoải mái. Thêm `express-rate-limit`
 - [ ] **Không có refresh token** — JWT sống 7 ngày, không thể thu hồi
 - [ ] **Không có logger** — chỉ `console.error`. Thêm `pino`
 - [ ] **Không có validate input** tập trung — thêm `zod`

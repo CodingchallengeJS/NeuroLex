@@ -23,7 +23,13 @@ const STEPS = [
   { label: 'SAT B2C1 1000 Part 4', script: 'import-va-b2c1-markdown.js', args: ['4'] },
   { label: 'Cambridge IELTS Advanced', script: 'import-cleaned-csv.js' },
   // Re-categorises words the Cambridge import loads, so it must run after it.
-  { label: '20 Cambridge IELTS Advanced unit notebooks', script: 'import-vocab4ielts-units.js' }
+  { label: '20 Cambridge IELTS Advanced unit notebooks', script: 'import-vocab4ielts-units.js' },
+  // Creates its own notebook, so it has to run before the classification pass
+  // below; it seeds the tag taxonomy itself rather than waiting for it.
+  { label: 'Linking words & discourse markers', script: 'import-connectives.js' },
+  // Last: classifies every notebook that now exists (names, slugs, tags).
+  { label: 'Tag taxonomy + notebook classification', script: 'import-tags.js' },
+  { label: 'Word function tags', script: 'import-vocab-tags.js' }
 ];
 
 function run(step) {

@@ -32,6 +32,7 @@ services:
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}
       JWT_SECRET: ${JWT_SECRET:-change-me-jwt-secret}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
     ports:
       - "${APP_HOST_PORT:-8000}:8000"
 

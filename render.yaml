@@ -34,6 +34,11 @@ services:
         value: "10"
       - key: JWT_EXPIRES_IN
         value: 7d
+      # Set this to your own email BEFORE registering on the deployed site.
+      # That account gets the maintainer flag (editing global vocabulary);
+      # without it nobody does, and user ids are just registration order.
+      - key: ADMIN_EMAIL
+        sync: false
       # Render injects PORT itself; index.js reads it.
 
 databases:

@@ -13,24 +13,12 @@
 const fs = require('fs');
 const path = require('path');
 const { createPool } = require('../db');
+const { upsertNotebook } = require('./lib/notebooks');
 
 const pool = createPool();
 
 const DATA_FILE = path.resolve(__dirname, '../assets/vocab4ielts-units.json');
 
-async function upsertNotebook(client, title, topic, difficulty) {
-  await client.query(
-    `INSERT INTO notebooks (title, topic, difficulty)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (title) DO NOTHING`,
-    [title, topic, difficulty]
-  );
-  const res = await client.query(
-    'SELECT id FROM notebooks WHERE title = $1 LIMIT 1',
-    [title]
-  );
-  return res.rows[0].id;
-}
 
 // Look the word up case-insensitively; only create it when genuinely absent.
 async function resolveVocabId(client, word) {
@@ -79,7 +67,14 @@ async function main() {
     await client.query('BEGIN');
 
     for (const unit of units) {
-      const notebookId = await upsertNotebook(client, unit.title, unit.topic, 'Advanced');
+      // assets JSON still carries the legacy "vocab4ielt-N <topic>" title
+      const unitNo = String(unit.unit).padStart(2, '0');
+      const notebookId = await upsertNotebook(client, {
+        slug: `cambridge-ielts-advanced-unit-${unitNo}`,
+        title: `Cambridge IELTS Advanced — Unit ${unitNo}: ${unit.topic}`,
+        topic: unit.topic,
+        difficulty: 'Advanced'
+      });
 
       let sortOrder = 1;
       for (const word of unit.words) {
@@ -90,7 +85,7 @@ async function main() {
         linked += 1;
       }
 
-      console.log(`- ${unit.title}: ${unit.words.length} words`);
+      console.log(`- Unit ${unitNo}: ${unit.topic} (${unit.words.length} words)`);
     }
 
     await client.query('COMMIT');

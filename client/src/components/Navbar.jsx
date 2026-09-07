@@ -2,6 +2,7 @@ import { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import AuthModal from './AuthModal';
+import GlobalSearchBar from './GlobalSearchBar';
 import SettingsModal from './SettingsModal';
 
 export default function Navbar() {
@@ -15,6 +16,7 @@ export default function Navbar() {
         <div className="nav-brand">
           <Link to="/">NeuroLex</Link>
         </div>
+        <GlobalSearchBar />
         <div className="nav-links">
           <Link to="/">Trang chủ</Link>
           <Link to="/notebooks">Sổ tay</Link>

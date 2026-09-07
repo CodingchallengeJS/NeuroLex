@@ -1,4 +1,5 @@
 const { createPool } = require('../db');
+const { upsertNotebook } = require('./lib/notebooks');
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
@@ -18,18 +19,12 @@ async function seedDatabase() {
     
     // 1. Create or get the Notebook
     // ON CONFLICT requires a UNIQUE constraint, which 'title' has in your schema
-    const notebookQuery = `
-      INSERT INTO notebooks (title, topic, difficulty) 
-      VALUES ($1, $2, $3)
-      ON CONFLICT (title) DO UPDATE SET title = EXCLUDED.title 
-      RETURNING id;
-    `;
-    const notebookRes = await client.query(notebookQuery, [
-      'Cambridge IELTS Advanced', 
-      'IELTS Vocabulary', 
-      'Advanced'
-    ]);
-    const notebookId = notebookRes.rows[0].id;
+    const notebookId = await upsertNotebook(client, {
+      slug: 'cambridge-ielts-advanced',
+      title: 'Cambridge IELTS Advanced',
+      topic: 'IELTS Vocabulary',
+      difficulty: 'Advanced'
+    });
     console.log(`Notebook secured with ID: ${notebookId}`);
 
     // 2. Read the CSV and process rows

@@ -45,11 +45,12 @@ for topic, words in data.items():
     print(f"Processing topic: {topic}")
 
     # 1️⃣ Insert notebook
-    # notebooks has no user_id column; title is the unique key (see createdb.sql).
+    # notebooks has no user_id column; built-in notebooks are keyed by title
+    # (see server/migrations/). owner_user_id stays NULL for seeded notebooks.
     cur.execute("""
         INSERT INTO notebooks (title, topic, difficulty)
         VALUES (%s, %s, %s)
-        ON CONFLICT (title)
+        ON CONFLICT (title) WHERE owner_user_id IS NULL
         DO UPDATE SET topic = EXCLUDED.topic
         RETURNING id;
     """, (topic, topic, "medium"))

@@ -11,12 +11,16 @@
     "migrate": "node migrate.js",
     "seed": "node seed.js",
     "db:setup": "node migrate.js && node seed.js",
+    "admin": "node other-tools/grant-admin.js",
     "seed:topics": "node other-tools/import-topics-and-sat-c1c2.js",
     "seed:magoosh": "node other-tools/import-magoosh.js",
     "seed:examples": "node other-tools/backfill-magoosh-examples.js",
     "seed:va": "node other-tools/import-va-b2c1-markdown.js",
     "seed:cambridge": "node other-tools/import-cleaned-csv.js",
     "seed:units": "node other-tools/import-vocab4ielts-units.js",
+    "seed:tags": "node other-tools/import-tags.js",
+    "seed:wordtags": "node other-tools/import-vocab-tags.js",
+    "seed:connectives": "node other-tools/import-connectives.js",
     "parse:questions": "node other-tools/parse-question-bank.js"
   },
   "dependencies": {
@@ -25,6 +29,7 @@
     "csv-parser": "^3.2.1",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.7.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3"
   }

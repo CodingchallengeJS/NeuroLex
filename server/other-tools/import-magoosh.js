@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createPool } = require('../db');
+const { upsertNotebook, slugify } = require('./lib/notebooks');
 
 const pool = createPool();
 
@@ -21,17 +22,6 @@ function emptyToNull(value) {
   return cleaned.length > 0 ? cleaned : null;
 }
 
-async function upsertNotebook(client, title, topic, difficulty) {
-  await client.query(
-    `INSERT INTO notebooks (title, topic, difficulty)
-     VALUES ($1,$2,$3)
-     ON CONFLICT (title) DO NOTHING`,
-    [title, topic, difficulty]
-  );
-
-  const notebookRes = await client.query('SELECT id FROM notebooks WHERE title = $1 LIMIT 1', [title]);
-  return notebookRes.rows[0].id;
-}
 
 // SỬA ĐỔI 2: Cập nhật SQL thông minh, bắt buộc ghi đè nếu DB đang chứa NULL, 'null' hoặc rỗng
 async function upsertVocabulary(client, item) {
@@ -78,10 +68,13 @@ async function linkVocabularyToNotebook(client, notebookId, vocabId, sortOrder =
   );
 }
 
-function formatTitle(filename) {
-  // ielts-common-1.json -> Ielts Common 1
-  const basename = path.basename(filename, '.json');
-  return basename.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+// ielts-very-hard-1.json -> "Very Hard 1" (the part after the IELTS prefix)
+function formatVariant(filename) {
+  return path.basename(filename, '.json')
+    .replace(/^ielts-/, '')
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 }
 
 async function importMagoosh(client, dirPath) {
@@ -97,9 +90,15 @@ async function importMagoosh(client, dirPath) {
     const raw = fs.readFileSync(fullPath, 'utf-8');
     const data = JSON.parse(raw);
     
-    const notebookTitle = formatTitle(file);
+    const variant = formatVariant(file);
+    const notebookTitle = `IELTS Magoosh — ${variant}`;
     console.log(`Importing notebook: ${notebookTitle}`);
-    const notebookId = await upsertNotebook(client, notebookTitle, 'IELTS Magoosh', 'mixed');
+    const notebookId = await upsertNotebook(client, {
+      slug: `ielts-magoosh-${slugify(variant)}`,
+      title: notebookTitle,
+      topic: 'IELTS Magoosh',
+      difficulty: 'mixed'
+    });
 
     let index = 1;
     let fileImported = 0;
@@ -133,12 +132,8 @@ async function main() {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
-    // Make sure tables are there
-    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS english_meaning TEXT');
-    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS vietnamese_meaning TEXT');
-    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS synonyms TEXT');
-    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS example TEXT');
+
+    // Schema is owned by server/migrations/ - run `npm run migrate` first.
 
     const importedCount = await importMagoosh(client, magooshDir);
 

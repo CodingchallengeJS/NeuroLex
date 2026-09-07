@@ -5,6 +5,7 @@ import Chart from 'react-apexcharts';
 
 export default function VocabularyProgressChart({ summary, total_words, onStartReview, selected_nb }) {
   const [selectedNb, setSelectedNb] = useState(selected_nb || null);
+  const [view, setView] = useState('bar');
   
   useEffect(() => {
     if(selectedNb != selected_nb) {
@@ -191,22 +192,52 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
 
   return (
     <div className="w-full flex flex-col">
-      {/* Donut Chart */}
-      <div className="w-full max-w-[220px] mx-auto">
-        <Chart options={donutOptions} series={series} type="donut" width="100%" />
+      {/* One chart at a time. The bar view is the actionable one, so it leads. */}
+      <div className="chart-toggle">
+        <div
+          className="segmented"
+          role="group"
+          aria-label="Kiểu biểu đồ"
+          style={{ '--seg-count': 2, '--seg-index': view === 'bar' ? 0 : 1 }}
+        >
+          <span className="segmented-thumb" aria-hidden="true" />
+          <button
+            type="button"
+            className={`segmented-btn icon-only ${view === 'bar' ? 'active' : ''}`}
+            onClick={() => setView('bar')}
+            title="Biểu đồ cột"
+            aria-pressed={view === 'bar'}
+          >
+            <i className="fa-solid fa-chart-column"></i>
+          </button>
+          <button
+            type="button"
+            className={`segmented-btn icon-only ${view === 'donut' ? 'active' : ''}`}
+            onClick={() => setView('donut')}
+            title="Biểu đồ tròn"
+            aria-pressed={view === 'donut'}
+          >
+            <i className="fa-solid fa-chart-pie"></i>
+          </button>
+        </div>
       </div>
 
-      {/* Bar Chart để thay thế các nút Review */}
-      <div className="w-full cursor-pointer">
-        <h4 className="text-sm text-gray-400 font-medium text-center">Nhấn vào cột để bắt đầu ôn tập</h4>
-        <Chart 
-          options={barOptions} 
-          series={[{ name: 'Số lượng từ', data: barSeriesData }]} 
-          type="bar" 
-          height={260} 
-          width="100%" 
-        />
-      </div>
+      {view === 'donut' ? (
+        <div className="w-full max-w-[220px] mx-auto">
+          <Chart options={donutOptions} series={series} type="donut" width="100%" />
+        </div>
+      ) : (
+        <div className="w-full cursor-pointer">
+          <h4 className="text-sm text-gray-400 font-medium text-center">Nhấn vào cột để bắt đầu ôn tập</h4>
+          <Chart
+            options={barOptions}
+            series={[{ name: 'Số lượng từ', data: barSeriesData }]}
+            type="bar"
+            height={260}
+            width="100%"
+          />
+        </div>
+      )}
     </div>
   );
 }

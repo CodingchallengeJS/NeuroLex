@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { rateLimit } = require('express-rate-limit');
 const { createPool } = require('./db');
 
 const app = express();
@@ -36,9 +37,31 @@ const pool = createPool();
 app.use(cors(process.env.CLIENT_ORIGIN ? { origin: process.env.CLIENT_ORIGIN } : {}));
 app.use(express.json());
 
+// Behind Render's proxy the client IP arrives in X-Forwarded-For. Trust exactly
+// one hop so the rate limiter keys on the real caller and not the proxy.
+if (process.env.TRUST_PROXY !== 'false') {
+  app.set('trust proxy', 1);
+}
+
+// Login and registration are the only unauthenticated write endpoints, so they
+// are what a credential-stuffing run would hammer.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: Number.parseInt(process.env.AUTH_RATE_LIMIT || '20', 10),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Quá nhiều lần thử, vui lòng đợi ít phút rồi thử lại.' }
+});
+
 const vocabularySelectFields = `
   v.id, v.word, v.meaning, v.phonetic, v.example, v.image_url,
-  v.english_meaning, v.vietnamese_meaning, v.synonyms
+  v.english_meaning, v.vietnamese_meaning, v.synonyms,
+  COALESCE((
+    SELECT JSON_AGG(JSONB_BUILD_OBJECT('slug', t.slug, 'label', t.label, 'kind', t.kind)
+                    ORDER BY t.kind, t.label)
+    FROM vocab_tags vt JOIN tags t ON t.id = vt.tag_id
+    WHERE vt.vocab_id = v.id
+  ), '[]') AS tags
 `;
 
 function validateEmail(email) {
@@ -64,6 +87,33 @@ function extractBearerToken(authorizationHeader) {
   }
 
   return token;
+}
+
+// Resolves the caller when a valid token is present, without requiring one.
+function optionalUserId(req) {
+  const token = extractBearerToken(req.headers.authorization);
+  if (!token) return null;
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET).sub;
+  } catch {
+    return null;
+  }
+}
+
+// Editing global vocabulary is maintainer-only. The flag lives in the database
+// rather than the JWT so revoking it takes effect immediately instead of when
+// the token expires up to 7 days later.
+async function requireAdmin(req, res, next) {
+  try {
+    const r = await pool.query('SELECT is_admin FROM users WHERE id = $1 LIMIT 1', [req.auth.userId]);
+    if (r.rowCount === 0 || r.rows[0].is_admin !== true) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    return next();
+  } catch (err) {
+    console.error('requireAdmin error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 }
 
 function authenticateToken(req, res, next) {
@@ -95,7 +145,7 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', authLimiter, async (req, res) => {
   const { username, email, password } = req.body;
 
   if (typeof username !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
@@ -129,9 +179,15 @@ app.post('/api/auth/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(pepperPassword(password), bcryptRounds);
 
+    // A brand new deployment has no maintainer yet. Rather than trusting
+    // registration order, grant the flag only to the address named in
+    // ADMIN_EMAIL. Unset means nobody gets it automatically.
+    const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const isAdmin = adminEmail.length > 0 && adminEmail === normalizedEmail.toLowerCase();
+
     const insertResult = await pool.query(
-      'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, created_at',
-      [normalizedUsername, normalizedEmail, passwordHash]
+      'INSERT INTO users (username, email, password_hash, is_admin) VALUES ($1, $2, $3, $4) RETURNING id, username, email, created_at, is_admin',
+      [normalizedUsername, normalizedEmail, passwordHash, isAdmin]
     );
 
     const user = insertResult.rows[0];
@@ -141,7 +197,8 @@ app.post('/api/auth/register', async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        createdAt: user.created_at
+        createdAt: user.created_at,
+        isAdmin: user.is_admin === true
       }
     });
   } catch (error) {
@@ -150,7 +207,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (typeof email !== 'string' || typeof password !== 'string') {
@@ -160,7 +217,7 @@ app.post('/api/auth/login', async (req, res) => {
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    const userResult = await pool.query('SELECT id, username, email, password_hash, created_at FROM users WHERE email = $1 LIMIT 1', [
+    const userResult = await pool.query('SELECT id, username, email, password_hash, created_at, is_admin FROM users WHERE email = $1 LIMIT 1', [
       normalizedEmail
     ]);
 
@@ -194,7 +251,8 @@ app.post('/api/auth/login', async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        createdAt: user.created_at
+        createdAt: user.created_at,
+        isAdmin: user.is_admin === true
       }
     });
   } catch (error) {
@@ -205,9 +263,10 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
-    const userResult = await pool.query('SELECT id, username, email, created_at FROM users WHERE id = $1 LIMIT 1', [
-      req.auth.userId
-    ]);
+    const userResult = await pool.query(
+      'SELECT id, username, email, created_at, is_admin FROM users WHERE id = $1 LIMIT 1',
+      [req.auth.userId]
+    );
     if (userResult.rowCount === 0) {
       return res.status(401).json({ error: 'User no longer exists' });
     }
@@ -218,7 +277,8 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        createdAt: user.created_at
+        createdAt: user.created_at,
+        isAdmin: user.is_admin === true
       }
     });
   } catch (error) {
@@ -229,20 +289,383 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 
 /* ---------- API endpoints for notebooks/vocab/repetition ---------- */
 
+// ?tag=exam:sat&tag=topic:health -> notebooks carrying ALL of those tags.
+// Express gives a string for one value and an array for several.
+function tagSlugsFromQuery(raw) {
+  if (!raw) return [];
+  return (Array.isArray(raw) ? raw : [raw])
+    .flatMap((v) => String(v).split(','))
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
 app.get('/api/notebooks', async (req, res) => {
   try {
+    // owner_user_id IS NULL = built-in notebook from the seed, visible to all.
+    // Anything owned is only visible to its owner.
+    const userId = optionalUserId(req);
+    const tagSlugs = tagSlugsFromQuery(req.query.tag);
+    const search = String(req.query.q || '').trim();
+
+    const vals = [userId];
+    let filters = '';
+
+    if (tagSlugs.length > 0) {
+      vals.push(tagSlugs);
+      const tagsParam = '$' + vals.length;
+      // Faceted matching: OR within a kind, AND across kinds.
+      //
+      // Picking SAT + IELTS means "either exam", because nothing is both.
+      // Picking IELTS + Magoosh means "IELTS AND from Magoosh", because those
+      // describe different axes.
+      //
+      // Counting DISTINCT kind does both at once: several tags of the same kind
+      // still count once, so one match satisfies that kind, while every kind
+      // present in the selection has to be matched by something.
+      // The `> 0` guard matters: if none of the requested slugs exist, both
+      // sides would be 0 and every notebook would match, so a typo would
+      // silently return the full list instead of nothing.
+      filters += `
+        AND (SELECT COUNT(DISTINCT kind) FROM tags WHERE slug = ANY(${tagsParam})) > 0
+        AND (
+          SELECT COUNT(DISTINCT t2.kind)
+          FROM notebook_tags nt2
+          JOIN tags t2 ON t2.id = nt2.tag_id
+          WHERE nt2.notebook_id = n.id AND t2.slug = ANY(${tagsParam})
+        ) = (SELECT COUNT(DISTINCT kind) FROM tags WHERE slug = ANY(${tagsParam}))`;
+    }
+
+    if (search) {
+      vals.push('%' + search + '%');
+      filters += ` AND n.title ILIKE $${vals.length}`;
+    }
+
     const q = `
-      SELECT n.*, COUNT(nv.vocab_id) AS vocab_count
+      SELECT n.*,
+        COUNT(DISTINCT nv.vocab_id) AS vocab_count,
+        COALESCE(
+          JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('slug', t.slug, 'label', t.label, 'kind', t.kind))
+            FILTER (WHERE t.id IS NOT NULL),
+          '[]'
+        ) AS tags
       FROM notebooks n
       LEFT JOIN notebook_vocab nv ON nv.notebook_id = n.id
+      LEFT JOIN notebook_tags nt ON nt.notebook_id = n.id
+      LEFT JOIN tags t ON t.id = nt.tag_id
+      WHERE (n.owner_user_id IS NULL OR n.owner_user_id = $1)${filters}
       GROUP BY n.id
-      ORDER BY n.id
+      -- Category first, name second: exam, then source within that exam, then
+      -- title. Groups the Cambridge units together, then Magoosh, then the
+      -- topic notebooks, then SAT. Untagged ones (Chunk, user lists) sort last.
+      ORDER BY
+        (SELECT MIN(te.label) FROM notebook_tags nte
+           JOIN tags te ON te.id = nte.tag_id
+          WHERE nte.notebook_id = n.id AND te.kind = 'exam') ASC NULLS LAST,
+        (SELECT MIN(ts.label) FROM notebook_tags nts
+           JOIN tags ts ON ts.id = nts.tag_id
+          WHERE nts.notebook_id = n.id AND ts.kind = 'source') ASC NULLS LAST,
+        n.title ASC
     `;
-    const r = await pool.query(q);
+    const r = await pool.query(q, vals);
     res.json({ notebooks: r.rows });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/* ---------- TAGS ---------- */
+
+app.get('/api/tags', async (req, res) => {
+  const scope = req.query.scope ? String(req.query.scope) : null;
+  if (scope && !['notebook', 'word', 'both'].includes(scope)) {
+    return res.status(400).json({ error: 'Invalid scope' });
+  }
+  try {
+    // scope 'both' tags are usable on either, so asking for one includes them.
+    const q = `
+      SELECT t.*,
+        (SELECT COUNT(*) FROM notebook_tags nt WHERE nt.tag_id = t.id)::int AS notebook_count,
+        (SELECT COUNT(*) FROM vocab_tags vt WHERE vt.tag_id = t.id)::int AS word_count
+      FROM tags t
+      WHERE $1::text IS NULL OR t.scope = $1 OR t.scope = 'both'
+      ORDER BY t.kind, t.label
+    `;
+    const r = await pool.query(q, [scope]);
+    res.json({ tags: r.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+const TAG_KINDS = ['exam', 'source', 'topic', 'level', 'function', 'register'];
+const TAG_SCOPES = ['notebook', 'word', 'both'];
+
+function validateTagBody({ slug, label, kind, scope }, { requireSlug }) {
+  if (requireSlug && !slug) return 'Slug is required';
+  if (slug && !/^[a-z0-9]+:[a-z0-9-]+$/.test(slug)) {
+    return 'Slug must look like kind:name (lowercase, e.g. topic:health)';
+  }
+  if (!label || !String(label).trim()) return 'Label is required';
+  if (!TAG_KINDS.includes(kind)) return 'Kind must be one of: ' + TAG_KINDS.join(', ');
+  if (scope && !TAG_SCOPES.includes(scope)) return 'Scope must be one of: ' + TAG_SCOPES.join(', ');
+  return null;
+}
+
+app.post('/api/tags', authenticateToken, requireAdmin, async (req, res) => {
+  const { slug, label, kind, scope, description } = req.body;
+  const invalid = validateTagBody(req.body, { requireSlug: true });
+  if (invalid) return res.status(400).json({ error: invalid });
+
+  try {
+    const r = await pool.query(
+      `INSERT INTO tags (slug, label, kind, scope, description)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [slug, String(label).trim(), kind, scope || 'both', description || null]
+    );
+    res.json({ tag: r.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'A tag with this slug already exists' });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Rename / recategorise. Slug is intentionally immutable: it is what the seed
+// importers and saved filters refer to.
+app.put('/api/tags/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const tagId = Number(req.params.id);
+  if (!Number.isInteger(tagId)) return res.status(400).json({ error: 'Invalid tag id' });
+
+  const { label, kind, scope, description } = req.body;
+  const invalid = validateTagBody(req.body, { requireSlug: false });
+  if (invalid) return res.status(400).json({ error: invalid });
+
+  try {
+    const r = await pool.query(
+      `UPDATE tags SET label = $1, kind = $2, scope = $3, description = $4
+       WHERE id = $5 RETURNING *`,
+      [String(label).trim(), kind, scope || 'both', description || null, tagId]
+    );
+    if (r.rowCount === 0) return res.status(404).json({ error: 'Tag not found' });
+    res.json({ tag: r.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// The join tables are ON DELETE CASCADE, so this drops the tag's links and
+// leaves every notebook and word intact.
+app.delete('/api/tags/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const tagId = Number(req.params.id);
+  if (!Number.isInteger(tagId)) return res.status(400).json({ error: 'Invalid tag id' });
+  try {
+    const r = await pool.query('DELETE FROM tags WHERE id = $1 RETURNING slug', [tagId]);
+    if (r.rowCount === 0) return res.status(404).json({ error: 'Tag not found' });
+    res.json({ deleted: r.rows[0].slug });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/* ---------- WORD TAGS ---------- */
+
+app.get('/api/vocabs/:id/tags', async (req, res) => {
+  const vocabId = Number(req.params.id);
+  if (!Number.isInteger(vocabId)) return res.status(400).json({ error: 'Invalid vocab id' });
+  try {
+    const r = await pool.query(
+      `SELECT t.* FROM vocab_tags vt JOIN tags t ON t.id = vt.tag_id
+       WHERE vt.vocab_id = $1 ORDER BY t.kind, t.label`,
+      [vocabId]
+    );
+    res.json({ tags: r.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Replace one word's tag set.
+app.put('/api/vocabs/:id/tags', authenticateToken, requireAdmin, async (req, res) => {
+  const vocabId = Number(req.params.id);
+  if (!Number.isInteger(vocabId)) return res.status(400).json({ error: 'Invalid vocab id' });
+  const slugs = Array.isArray(req.body.tags) ? req.body.tags : null;
+  if (!slugs) return res.status(400).json({ error: 'tags must be an array of slugs' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const exists = await client.query('SELECT 1 FROM vocabulary WHERE id = $1', [vocabId]);
+    if (exists.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Vocabulary not found' });
+    }
+
+    const found = await client.query('SELECT id, slug FROM tags WHERE slug = ANY($1)', [slugs]);
+    const missing = slugs.filter((sl) => !found.rows.some((r) => r.slug === sl));
+    if (missing.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Unknown tag(s): ' + missing.join(', ') });
+    }
+
+    await client.query('DELETE FROM vocab_tags WHERE vocab_id = $1', [vocabId]);
+    for (const row of found.rows) {
+      await client.query(
+        'INSERT INTO vocab_tags (vocab_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [vocabId, row.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ vocab_id: vocabId, tags: found.rows.map((r) => r.slug) });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// Apply or remove ONE tag across many words at once. Hand-tagging 2869 words
+// one at a time is not realistic, so the admin UI selects a batch and calls this.
+app.post('/api/vocabs/tags/bulk', authenticateToken, requireAdmin, async (req, res) => {
+  const { tag, action } = req.body;
+  const vocabIds = Array.isArray(req.body.vocab_ids) ? req.body.vocab_ids : null;
+
+  if (!tag) return res.status(400).json({ error: 'tag slug is required' });
+  if (!vocabIds || vocabIds.length === 0) {
+    return res.status(400).json({ error: 'vocab_ids must be a non-empty array' });
+  }
+  if (!['add', 'remove'].includes(action)) {
+    return res.status(400).json({ error: "action must be 'add' or 'remove'" });
+  }
+  const ids = vocabIds.map(Number).filter(Number.isInteger);
+  if (ids.length !== vocabIds.length) {
+    return res.status(400).json({ error: 'vocab_ids must all be integers' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const tagRes = await client.query('SELECT id FROM tags WHERE slug = $1 LIMIT 1', [tag]);
+    if (tagRes.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: `Unknown tag: ${tag}` });
+    }
+    const tagId = tagRes.rows[0].id;
+
+    let affected;
+    if (action === 'add') {
+      const r = await client.query(
+        `INSERT INTO vocab_tags (vocab_id, tag_id)
+         SELECT v.id, $2 FROM vocabulary v WHERE v.id = ANY($1)
+         ON CONFLICT DO NOTHING`,
+        [ids, tagId]
+      );
+      affected = r.rowCount;
+    } else {
+      const r = await client.query(
+        'DELETE FROM vocab_tags WHERE tag_id = $1 AND vocab_id = ANY($2)',
+        [tagId, ids]
+      );
+      affected = r.rowCount;
+    }
+
+    await client.query('COMMIT');
+    res.json({ tag, action, requested: ids.length, affected });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// Browse every word carrying a tag - "show me all substantiation verbs",
+// across whichever notebooks they happen to live in.
+app.get('/api/vocabs/by-tag/:slug', async (req, res) => {
+  const slug = String(req.params.slug);
+  try {
+    const r = await pool.query(
+      `SELECT ${vocabularySelectFields}
+       FROM vocabulary v
+       JOIN vocab_tags vt ON vt.vocab_id = v.id
+       JOIN tags t ON t.id = vt.tag_id
+       WHERE t.slug = $1
+       ORDER BY v.word`,
+      [slug]
+    );
+    res.json({ vocabs: r.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Replace a notebook's tag set. Built-in notebooks are admin-only; a user may
+// retag their own.
+app.put('/api/notebooks/:id/tags', authenticateToken, async (req, res) => {
+  const notebookId = Number(req.params.id);
+  if (!Number.isInteger(notebookId)) return res.status(400).json({ error: 'Invalid notebook id' });
+  const slugs = Array.isArray(req.body.tags) ? req.body.tags : null;
+  if (!slugs) return res.status(400).json({ error: 'tags must be an array of slugs' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const nb = await client.query('SELECT owner_user_id FROM notebooks WHERE id = $1', [notebookId]);
+    if (nb.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Notebook not found' });
+    }
+
+    const owner = nb.rows[0].owner_user_id;
+    const userId = Number(req.auth.userId);
+    if (owner === null) {
+      const admin = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+      if (admin.rowCount === 0 || admin.rows[0].is_admin !== true) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ error: 'Permission denied' });
+      }
+    } else if (Number(owner) !== userId) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+
+    const found = await client.query('SELECT id, slug FROM tags WHERE slug = ANY($1)', [slugs]);
+    const missing = slugs.filter((sl) => !found.rows.some((r) => r.slug === sl));
+    if (missing.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Unknown tag(s): ' + missing.join(', ') });
+    }
+
+    await client.query('DELETE FROM notebook_tags WHERE notebook_id = $1', [notebookId]);
+    for (const row of found.rows) {
+      await client.query(
+        'INSERT INTO notebook_tags (notebook_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [notebookId, row.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ notebook_id: notebookId, tags: found.rows.map((r) => r.slug) });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
@@ -261,23 +684,26 @@ app.get('/api/vocabs/count', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/notebooks', async (req, res) => {
-  const { title, topic, difficulty } = req.body;
+app.post('/api/notebooks', authenticateToken, async (req, res) => {
+  const { title, topic, difficulty, description } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Title is required' });
   }
   try {
+    // topic/difficulty are legacy free-text; new notebooks classify via tags.
     const q = `
-      INSERT INTO notebooks (title, topic, difficulty)
-      VALUES ($1, $2, $3)
+      INSERT INTO notebooks (title, topic, difficulty, description, owner_user_id)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
-    const r = await pool.query(q, [title, topic || '', difficulty || '']);
+    const r = await pool.query(q, [
+      title, topic || '', difficulty || '', description || null, Number(req.auth.userId)
+    ]);
     res.json({ notebook: r.rows[0] });
   } catch (err) {
     console.error(err);
     if (err.code === '23505') {
-      return res.status(400).json({ error: 'A notebook with this title already exists' });
+      return res.status(400).json({ error: 'You already have a notebook with this title' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -317,7 +743,7 @@ app.get('/api/notebooks/:id/vocabs', async (req, res) => {
   }
 });
 
-app.post('/api/notebooks/:id/vocabs', async (req, res) => {
+app.post('/api/notebooks/:id/vocabs', authenticateToken, async (req, res) => {
   const notebookId = Number(req.params.id);
   const { word, meaning, english_meaning, vietnamese_meaning, synonyms, phonetic, example } = req.body;
   if (!Number.isInteger(notebookId)) return res.status(400).json({ error: 'Invalid notebook id' });
@@ -364,10 +790,8 @@ app.post('/api/notebooks/:id/vocabs', async (req, res) => {
   }
 });
 
-app.put('/api/vocabs/:id', authenticateToken, async (req, res) => {
+app.put('/api/vocabs/:id', authenticateToken, requireAdmin, async (req, res) => {
   const vocabId = Number(req.params.id);
-  const userId = Number(req.auth.userId);
-  if (userId !== 1) return res.status(403).json({ error: 'Permission denied' });
   if (!Number.isInteger(vocabId)) return res.status(400).json({ error: 'Invalid vocab id' });
   
   const { word, meaning, english_meaning, vietnamese_meaning, synonyms, phonetic, example } = req.body;
@@ -550,11 +974,17 @@ app.post('/api/repetition/split-chunk', authenticateToken, async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Find or create the 'Chunk' notebook
-    let chunkNbRes = await client.query(`SELECT id FROM notebooks WHERE title = 'Chunk' LIMIT 1`);
+    // 1. Find or create this user's own 'Chunk' notebook. It used to be a single
+    //    global notebook, so one user rebuilding their chunk wiped everyone else's.
+    let chunkNbRes = await client.query(
+      `SELECT id FROM notebooks WHERE title = 'Chunk' AND owner_user_id = $1 LIMIT 1`,
+      [userId]
+    );
     if (chunkNbRes.rowCount === 0) {
       chunkNbRes = await client.query(
-        `INSERT INTO notebooks (title, topic, difficulty) VALUES ('Chunk', 'Custom', 'mixed') RETURNING id`
+        `INSERT INTO notebooks (title, topic, difficulty, owner_user_id)
+         VALUES ('Chunk', 'Custom', 'mixed', $1) RETURNING id`,
+        [userId]
       );
     }
     const chunkId = chunkNbRes.rows[0].id;
@@ -680,7 +1110,7 @@ app.get('/api/search', async (req, res) => {
     const sql = `
       WITH matched AS (
         SELECT DISTINCT v.id, v.word, v.meaning, v.phonetic, v.image_url,
-          v.english_meaning, v.vietnamese_meaning, v.synonyms
+          v.english_meaning, v.vietnamese_meaning, v.synonyms, v.example
         FROM vocabulary v
         LEFT JOIN notebook_vocab nv ON nv.vocab_id = v.id
         WHERE (
@@ -691,16 +1121,23 @@ app.get('/api/search', async (req, res) => {
           OR v.synonyms ILIKE $3
         )${notebookFilter}
       )
-      SELECT * FROM matched
-      ORDER BY 
+      SELECT m.*,
+        COALESCE((
+          SELECT JSON_AGG(JSONB_BUILD_OBJECT('slug', t.slug, 'label', t.label, 'kind', t.kind)
+                          ORDER BY t.kind, t.label)
+          FROM vocab_tags vt JOIN tags t ON t.id = vt.tag_id
+          WHERE vt.vocab_id = m.id
+        ), '[]') AS tags
+      FROM matched m
+      ORDER BY
         CASE
-          WHEN word ILIKE $1 THEN 1
-          WHEN word ILIKE $2 THEN 2
-          WHEN word ILIKE $3 THEN 3
-          WHEN synonyms ILIKE $3 THEN 4
+          WHEN m.word ILIKE $1 THEN 1
+          WHEN m.word ILIKE $2 THEN 2
+          WHEN m.word ILIKE $3 THEN 3
+          WHEN m.synonyms ILIKE $3 THEN 4
           ELSE 5
         END,
-        word ASC
+        m.word ASC
       LIMIT 50
     `;
     

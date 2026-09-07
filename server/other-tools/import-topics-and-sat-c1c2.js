@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createPool } = require('../db');
+const { upsertNotebook, slugify } = require('./lib/notebooks');
 
 const pool = createPool();
 
@@ -104,24 +105,6 @@ function parseCsv(text) {
     );
 }
 
-async function ensureVocabularyDetailColumns(client) {
-  await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS english_meaning TEXT');
-  await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS vietnamese_meaning TEXT');
-  await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS synonyms TEXT');
-  await client.query('ALTER TABLE notebook_vocab ADD COLUMN IF NOT EXISTS sort_order INTEGER');
-}
-
-async function upsertNotebook(client, title, topic, difficulty) {
-  await client.query(
-    `INSERT INTO notebooks (title, topic, difficulty)
-     VALUES ($1,$2,$3)
-     ON CONFLICT (title) DO NOTHING`,
-    [title, topic, difficulty]
-  );
-
-  const notebookRes = await client.query('SELECT id FROM notebooks WHERE title = $1 LIMIT 1', [title]);
-  return notebookRes.rows[0].id;
-}
 
 // SỬA ĐỔI 2: Update SQL ghi đè những dòng bị 'null' hoặc rỗng trong DB
 async function upsertVocabulary(client, item) {
@@ -190,7 +173,12 @@ async function importJsonVocab(client, file) {
   let importedCount = 0;
 
   for (const topic of Object.keys(data)) {
-    const notebookId = await upsertNotebook(client, topic, topic, 'medium');
+    const notebookId = await upsertNotebook(client, {
+      slug: `topic-${slugify(topic)}`,
+      title: topic,
+      topic,
+      difficulty: 'medium'
+    });
     const words = data[topic];
 
     const wordList = Object.keys(words);
@@ -223,7 +211,12 @@ async function importSatCsv(client, file) {
 
   const raw = fs.readFileSync(file, 'utf-8');
   const rows = parseCsv(raw);
-  const notebookId = await upsertNotebook(client, 'SAT C1-C2 500 (2023-2026)', 'SAT Vocabulary', 'C1-C2');
+  const notebookId = await upsertNotebook(client, {
+    slug: 'sat-c1c2-500-2023-2026',
+    title: 'SAT C1-C2 500 (2023-2026)',
+    topic: 'SAT Vocabulary',
+    difficulty: 'C1-C2'
+  });
   let importedCount = 0;
 
   for (const row of rows) {
@@ -263,7 +256,7 @@ async function main() {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await ensureVocabularyDetailColumns(client);
+    // Schema is owned by server/migrations/ - run `npm run migrate` first.
 
     const jsonCount = await importJsonVocab(client, jsonFile);
     const satCount = await importSatCsv(client, satCsvFile);

@@ -5,7 +5,7 @@
  * schema_migrations and skipped.
  *
  * Safe to run on every boot: on an up-to-date database it does nothing.
- * Unlike createdb.sql it never drops anything.
+ * Unlike reset-dev-db.sql it never drops anything.
  */
 const fs = require('fs');
 const path = require('path');

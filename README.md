@@ -125,7 +125,7 @@ npm run db:setup     # = npm run migrate && npm run seed
   **không xoá gì cả**. Chạy được cả trên database đã có dữ liệu từ trước.
 - `npm run seed` — nạp toàn bộ từ vựng. Tự bỏ qua nếu đã có sổ tay.
 
-> ⚠️ `server/createdb.sql` **không còn là cách dựng DB nữa**. Nó mở đầu bằng
+> ⚠️ `server/reset-dev-db.sql` **không còn là cách dựng DB nữa**. Nó mở đầu bằng
 > `DROP SCHEMA public CASCADE` — chỉ dùng khi bạn cố tình muốn xoá sạch và làm lại
 > từ đầu. Dùng `npm run migrate` cho mọi trường hợp bình thường.
 
@@ -173,7 +173,11 @@ dùng **Blueprint** thì Render mới dựng cả web service lẫn Postgres cù
    - Web service `neurolex` (build từ `Dockerfile`)
    - `DATABASE_URL` được nối sẵn giữa hai bên
    - `AUTH_PEPPER` và `JWT_SECRET` được sinh ngẫu nhiên
-4. Bấm **Apply**.
+4. **Đặt `ADMIN_EMAIL` = email của bạn** khi Render hỏi. Tài khoản đăng ký bằng
+   email này sẽ có quyền sửa từ vựng dùng chung. Bỏ trống thì không ai có quyền
+   đó (và bạn cấp sau bằng `npm run admin -- email@cua-ban`).
+5. Bấm **Apply**.
+6. Đăng ký tài khoản trên web bằng đúng email ở bước 4.
 
 Lần deploy đầu tiên, container tự chạy migration rồi seed, nên **schema và toàn bộ
 sổ tay tự có sẵn**, không cần chạy `psql` tay. Các lần deploy sau seed tự bỏ qua.

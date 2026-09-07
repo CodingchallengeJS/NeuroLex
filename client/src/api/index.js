@@ -31,3 +31,25 @@ export const submitReviewStep = (notebookId, vocabId, correctCount) => apiFetch(
 export const createNotebook = (data) => apiFetch('/notebooks', { method: 'POST', body: JSON.stringify(data) });
 export const addVocabToNotebook = (notebookId, data) => apiFetch(`/notebooks/${notebookId}/vocabs`, { method: 'POST', body: JSON.stringify(data) });
 export const updateVocab = (vocabId, data) => apiFetch(`/vocabs/${vocabId}`, { method: 'PUT', body: JSON.stringify(data) });
+
+// --- Tags ---
+export const fetchTags = (scope) => apiFetch(scope ? `/tags?scope=${scope}` : '/tags');
+export const createTag = (data) => apiFetch('/tags', { method: 'POST', body: JSON.stringify(data) });
+export const updateTag = (tagId, data) => apiFetch(`/tags/${tagId}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteTag = (tagId) => apiFetch(`/tags/${tagId}`, { method: 'DELETE' });
+export const setNotebookTags = (notebookId, tags) => apiFetch(`/notebooks/${notebookId}/tags`, { method: 'PUT', body: JSON.stringify({ tags }) });
+
+// Notebooks filtered by tag slugs (AND) and/or a title search.
+export const fetchNotebooksFiltered = ({ tags = [], q = '' } = {}) => {
+  const params = new URLSearchParams();
+  tags.forEach((t) => params.append('tag', t));
+  if (q) params.set('q', q);
+  const qs = params.toString();
+  return apiFetch(qs ? `/notebooks?${qs}` : '/notebooks');
+};
+
+// --- Word tags ---
+export const fetchVocabTags = (vocabId) => apiFetch(`/vocabs/${vocabId}/tags`);
+export const setVocabTags = (vocabId, tags) => apiFetch(`/vocabs/${vocabId}/tags`, { method: 'PUT', body: JSON.stringify({ tags }) });
+export const bulkTagVocabs = (tag, vocabIds, action) => apiFetch('/vocabs/tags/bulk', { method: 'POST', body: JSON.stringify({ tag, vocab_ids: vocabIds, action }) });
+export const fetchVocabsByTag = (slug) => apiFetch(`/vocabs/by-tag/${encodeURIComponent(slug)}`);

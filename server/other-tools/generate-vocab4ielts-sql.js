@@ -82,7 +82,7 @@ function generateSQL() {
 INSERT INTO notebooks (title, topic, difficulty) VALUES
     ${notebooksInsert},
     ('vocab4ielts-other', 'Missing Vocab Fallback', 'Advanced')
-ON CONFLICT (title) DO NOTHING;
+ON CONFLICT (title) WHERE owner_user_id IS NULL DO NOTHING;
 
 -- BƯỚC 2: MAPPING TOÀN BỘ DATA TỪ TEXT FILE
 WITH vocab_mapping(unit_title, word) AS (

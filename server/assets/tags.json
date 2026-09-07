@@ -1,0 +1,194 @@
+{
+  "_note": "Starter tag taxonomy, loaded by other-tools/import-tags.js. scope: 'notebook' = only meaningful for a collection, 'word' = only meaningful for a single word, 'both' = either. The admin can rename, add and delete tags in the app; this file is only the seed.",
+  "tags": [
+    {
+      "slug": "exam:ielts",
+      "label": "IELTS",
+      "kind": "exam",
+      "scope": "notebook",
+      "description": "Từ vựng phục vụ kỳ thi IELTS"
+    },
+    {
+      "slug": "exam:sat",
+      "label": "SAT",
+      "kind": "exam",
+      "scope": "notebook",
+      "description": "Từ vựng phục vụ kỳ thi SAT"
+    },
+    {
+      "slug": "exam:toefl",
+      "label": "TOEFL",
+      "kind": "exam",
+      "scope": "notebook",
+      "description": "Từ vựng phục vụ kỳ thi TOEFL"
+    },
+    {
+      "slug": "source:magoosh",
+      "label": "Magoosh",
+      "kind": "source",
+      "scope": "notebook",
+      "description": "Bộ flashcard Magoosh"
+    },
+    {
+      "slug": "source:cambridge",
+      "label": "Cambridge",
+      "kind": "source",
+      "scope": "notebook",
+      "description": "Cambridge Vocabulary for IELTS"
+    },
+    {
+      "slug": "source:vietaccepted",
+      "label": "VietAccepted",
+      "kind": "source",
+      "scope": "notebook",
+      "description": "Tài liệu VietAccepted"
+    },
+    {
+      "slug": "level:b2-c1",
+      "label": "B2–C1",
+      "kind": "level",
+      "scope": "notebook",
+      "description": "Trình độ trung cao cấp"
+    },
+    {
+      "slug": "level:c1-c2",
+      "label": "C1–C2",
+      "kind": "level",
+      "scope": "notebook",
+      "description": "Trình độ cao cấp"
+    },
+    {
+      "slug": "level:advanced",
+      "label": "Advanced",
+      "kind": "level",
+      "scope": "notebook",
+      "description": "Nâng cao (chưa quy đổi CEFR)"
+    },
+    {
+      "slug": "topic:health",
+      "label": "Sức khoẻ",
+      "kind": "topic",
+      "scope": "both",
+      "description": "Sức khoẻ, y tế, lối sống"
+    },
+    {
+      "slug": "topic:science",
+      "label": "Khoa học",
+      "kind": "topic",
+      "scope": "both",
+      "description": "Khoa học và nghiên cứu"
+    },
+    {
+      "slug": "topic:environment",
+      "label": "Môi trường",
+      "kind": "topic",
+      "scope": "both",
+      "description": "Môi trường và biến đổi khí hậu"
+    },
+    {
+      "slug": "topic:technology",
+      "label": "Công nghệ",
+      "kind": "topic",
+      "scope": "both",
+      "description": "Công nghệ và xã hội"
+    },
+    {
+      "slug": "topic:education",
+      "label": "Giáo dục",
+      "kind": "topic",
+      "scope": "both",
+      "description": "Giáo dục và học tập"
+    },
+    {
+      "slug": "topic:society",
+      "label": "Xã hội",
+      "kind": "topic",
+      "scope": "both",
+      "description": "Chính phủ, xã hội, con người"
+    },
+    {
+      "slug": "topic:psychology",
+      "label": "Tâm lý",
+      "kind": "topic",
+      "scope": "both",
+      "description": "Tâm lý và hành vi"
+    },
+    {
+      "slug": "topic:urbanization",
+      "label": "Đô thị hoá",
+      "kind": "topic",
+      "scope": "both",
+      "description": "Đô thị hoá và di cư"
+    },
+    {
+      "slug": "function:substantiate",
+      "label": "Củng cố / chứng minh",
+      "kind": "function",
+      "scope": "word",
+      "description": "Động từ dùng để ủng hộ, chứng minh một luận điểm: corroborate, substantiate, bolster…"
+    },
+    {
+      "slug": "function:dispute",
+      "label": "Bác bỏ / phản biện",
+      "kind": "function",
+      "scope": "word",
+      "description": "Động từ dùng để phản bác một luận điểm: undermine, refute, debunk…"
+    },
+    {
+      "slug": "function:contrast",
+      "label": "Tương phản",
+      "kind": "function",
+      "scope": "word",
+      "description": "Từ nối chỉ sự đối lập: however, nevertheless, whereas…"
+    },
+    {
+      "slug": "function:addition",
+      "label": "Bổ sung",
+      "kind": "function",
+      "scope": "word",
+      "description": "Từ nối bổ sung ý: moreover, furthermore, likewise…"
+    },
+    {
+      "slug": "function:cause",
+      "label": "Nguyên nhân – kết quả",
+      "kind": "function",
+      "scope": "word",
+      "description": "Từ nối chỉ quan hệ nhân quả: hence, thereby, consequently…"
+    },
+    {
+      "slug": "function:concession",
+      "label": "Nhượng bộ",
+      "kind": "function",
+      "scope": "word",
+      "description": "Từ nối nhượng bộ: albeit, notwithstanding, admittedly…"
+    },
+    {
+      "slug": "function:emphasis",
+      "label": "Nhấn mạnh",
+      "kind": "function",
+      "scope": "word",
+      "description": "Từ dùng để nhấn mạnh: indeed, notably, markedly…"
+    },
+    {
+      "slug": "function:negation",
+      "label": "Phủ định",
+      "kind": "function",
+      "scope": "word",
+      "description": "Từ phủ định / hạn định: not, neither, hardly, by no means…"
+    },
+    {
+      "slug": "function:hedge",
+      "label": "Giảm nhẹ / dè dặt",
+      "kind": "function",
+      "scope": "word",
+      "description": "Từ diễn đạt dè dặt, không khẳng định tuyệt đối: arguably, ostensibly, seemingly…"
+    },
+    {
+      "slug": "register:academic",
+      "label": "Học thuật",
+      "kind": "register",
+      "scope": "word",
+      "description": "Từ trang trọng, dùng trong văn viết học thuật"
+    }
+  ]
+}

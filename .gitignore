@@ -148,3 +148,9 @@ backup.sql
 *.dump
 *.sql.gz
 dump*.sql
+
+# Competitive-programming scratch files dumped in the project root.
+# Delete these lines if you ever want to commit C++ here.
+*.cpp
+*.exe
+*.out

@@ -1,0 +1,49 @@
+{
+  "_note": "Word-level function tags, loaded by other-tools/import-vocab-tags.js. Built from a curated core list plus one hop through vocabulary.synonyms, then hand-reviewed. Synonym expansion produced obvious noise (mineral, crop, productivity) which was removed; borderline entries (rationalize, defy, expose, sanction, contend) were dropped rather than guessed at.",
+  "_scope_note": "These describe how a word FUNCTIONS in an argument, not what it means. function:addition therefore holds discourse markers (furthermore, likewise) and NOT semantic 'add' verbs like accumulate or append. Words legitimately carrying two functions (yield = produce and concede; nevertheless = contrast and concession) are listed under both.",
+  "_missing_note": "Basic connectives (however, moreover, albeit, thus, therefore, arguably, ostensibly) are absent from the vocabulary table because the SAT/IELTS source lists only cover advanced words. import-connectives.js adds them and tags them.",
+  "tags": {
+    "function:substantiate": [
+      "corroborate", "substantiate", "validate", "vindicate", "bolster", "buttress",
+      "demonstrate", "uphold", "reinforce", "endorse", "justify", "warrant",
+      "establish", "advocate", "illustrate", "exemplify", "evince", "consolidate",
+      "manifest", "exhibit"
+    ],
+    "function:dispute": [
+      "undermine", "refute", "debunk", "dispute", "contradict", "negate",
+      "repudiate", "controvert", "impugn", "challenge", "denounce", "renounce",
+      "disparage", "criticize", "decry", "denigrate", "erode", "nullify",
+      "reject", "subvert", "weaken", "oppose", "discount", "deride"
+    ],
+    "function:contrast": [
+      "nevertheless", "nonetheless", "conversely", "whereas", "notwithstanding",
+      "contrary", "alternatively", "despite", "juxtapose", "disparate",
+      "antithetical", "discrepancy", "incongruous", "differ", "distinguish",
+      "polarize"
+    ],
+    "function:addition": [
+      "furthermore", "additionally", "likewise", "similarly"
+    ],
+    "function:cause": [
+      "hence", "consequently", "thereby", "accordingly", "ensue", "engender",
+      "trigger", "induce", "provoke", "stem", "yield", "spawn", "elicit",
+      "prompt", "catalyst", "foment", "generate", "originate", "stimulate",
+      "breed", "culminate", "render", "underlie", "attribute"
+    ],
+    "function:concession": [
+      "concede", "acknowledge", "notwithstanding", "yield", "grant",
+      "acquiesce", "waive", "forgo", "nevertheless", "nonetheless"
+    ],
+    "function:emphasis": [
+      "notably", "underscore", "highlight", "accentuate", "emphasize", "salient",
+      "paramount", "conspicuous", "crucial", "foreground", "notable", "prominent",
+      "remarkably", "stress", "underline", "striking", "profound", "pivotal",
+      "foremost", "compelling", "palpable"
+    ],
+    "function:hedge": [
+      "tentative", "imply", "indicate", "conjectural", "speculate", "postulate",
+      "hypothesize", "conjecture", "infer", "nominal", "ambivalent", "equivocal",
+      "dubious"
+    ]
+  }
+}

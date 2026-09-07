@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import TagChip from './TagChip';
 
 export default function VocabCard({ vocab, onEdit }) {
   const { user } = useContext(AuthContext);
@@ -22,9 +23,9 @@ export default function VocabCard({ vocab, onEdit }) {
     <div className="vocab-card">
       <div className="vc-header">
         <h3 className="vc-word">{vocab.word}</h3>
-        <div>
-          {Number(user?.id) === 1 && (
-            <button className="icon-btn audio-btn" onClick={() => onEdit && onEdit(vocab)} title="Sửa từ vựng" style={{ marginRight: '8px' }}>
+        <div className="vc-actions">
+          {user?.isAdmin && (
+            <button className="icon-btn audio-btn" onClick={() => onEdit && onEdit(vocab)} title="Sửa từ vựng">
               <i className="fa-solid fa-pen"></i>
             </button>
           )}
@@ -50,6 +51,12 @@ export default function VocabCard({ vocab, onEdit }) {
               <li key={idx} className="example-text">{ex}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {Array.isArray(vocab.tags) && vocab.tags.length > 0 && (
+        <div className="vc-tags">
+          {vocab.tags.map(t => <TagChip key={t.slug} tag={t} />)}
         </div>
       )}
 

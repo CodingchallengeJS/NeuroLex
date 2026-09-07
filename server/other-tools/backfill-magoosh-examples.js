@@ -68,9 +68,8 @@ async function main() {
   try {
     // Khởi tạo Transaction để đảm bảo tính toàn vẹn dữ liệu (Data Integrity)
     await client.query('BEGIN');
-    
-    // Safety check: Đảm bảo cột 'example' thực sự tồn tại trong DB trước khi thao tác
-    await client.query('ALTER TABLE vocabulary ADD COLUMN IF NOT EXISTS example TEXT');
+
+    // Schema is owned by server/migrations/ - run `npm run migrate` first.
     
     const updatedCount = await importExamples(client, magooshDir);
 

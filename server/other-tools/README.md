@@ -30,7 +30,7 @@ npm run parse:questions  # node other-tools/parse-question-bank.js
 ## Thứ tự nạp dữ liệu từ DB trống
 
 ```bash
-psql -U <user> -d <db> -f server/createdb.sql   # CẢNH BÁO: DROP SCHEMA public CASCADE
+cd server && npm run db:setup   # migrate + seed, không xoá gì
 cd server
 npm run seed:topics
 npm run seed:magoosh
@@ -129,13 +129,29 @@ chưa có trong bảng `vocabulary` sẽ được tạo mới (chỉ có chữ, 
 
 Tốn quota API — cân nhắc trước khi chạy.
 
+### `grant-admin.js <email> [--revoke]`
+
+Cấp / thu hồi quyền **maintainer** — quyền sửa từ vựng dùng chung
+(`PUT /api/vocabs/:id`).
+
+```bash
+npm run admin -- you@example.com            # cấp quyền
+npm run admin -- you@example.com --revoke   # thu hồi
+npm run admin -- --list                     # xem ai đang có quyền
+```
+
+Trước đây quyền này gắn cứng vào `user_id === 1` — tức là **người đăng ký đầu
+tiên**. Ở máy bạn thì đúng, nhưng trên bản deploy mới (DB trống) thì ai đăng ký
+trước sẽ thành id 1. Giờ dùng cột `users.is_admin`, và biến `ADMIN_EMAIL` sẽ tự
+cấp quyền cho email đó lúc đăng ký.
+
 ### `addtostudy.py --total <N> [--user-id 1] [--nb-a 22] [--nb-b 8] [--chunk 5]`
 
 Phân bổ từ xen kẽ giữa 2 sổ tay vào hàng đợi ôn tập của một user.
 
 Script này gọi hàm SQL `add_vocab_to_review(user_id, notebook_id, limit)`. Hàm
 này trước đây chỉ tồn tại trong database trên máy, không có trong repo — nay đã
-được dump vào cuối `server/createdb.sql`, nên DB dựng mới từ repo sẽ có sẵn.
+được dump vào cuối `server/reset-dev-db.sql`, nên DB dựng mới từ repo sẽ có sẵn.
 
 ---
 

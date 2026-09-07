@@ -1,0 +1,1004 @@
+{
+  "_note": "Linking words and discourse markers, loaded by other-tools/import-connectives.js. These are absent from the SAT/IELTS source lists, which only carry advanced vocabulary - yet they are the words that actually hold an IELTS Writing Task 2 argument together. Some entries (nevertheless, conversely, whereas, hence, ...) already exist in the vocabulary table; the importer links and tags them without overwriting their existing meanings.",
+  "notebook": {
+    "slug": "linking-words-discourse-markers",
+    "title": "Linking Words & Discourse Markers",
+    "topic": "Discourse Markers",
+    "difficulty": "B2-C1"
+  },
+  "words": [
+    {
+      "word": "however",
+      "phonetic": "/haʊˈev.ər/",
+      "english_meaning": "used to introduce a statement that contrasts with what was just said",
+      "vietnamese_meaning": "tuy nhiên",
+      "example": "The policy is popular. However, it is expensive to run.",
+      "synonyms": "nevertheless, nonetheless, yet",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "but",
+      "phonetic": "/bʌt/",
+      "english_meaning": "used to link two contrasting ideas",
+      "vietnamese_meaning": "nhưng",
+      "example": "The idea is simple but effective.",
+      "synonyms": "however, yet",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "yet",
+      "phonetic": "/jet/",
+      "english_meaning": "in spite of that; nevertheless",
+      "vietnamese_meaning": "thế nhưng, vậy mà",
+      "example": "The evidence is thin, yet the conclusion is confident.",
+      "synonyms": "however, nevertheless",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "instead",
+      "phonetic": "/ɪnˈsted/",
+      "english_meaning": "as an alternative to something mentioned",
+      "vietnamese_meaning": "thay vào đó",
+      "example": "Do not ban cars; instead, invest in public transport.",
+      "synonyms": "rather, alternatively",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "on the contrary",
+      "english_meaning": "used to say the opposite of what was just stated is true",
+      "vietnamese_meaning": "trái lại, ngược lại",
+      "example": "This is not a minor issue; on the contrary, it is central.",
+      "synonyms": "conversely, quite the opposite",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "on the other hand",
+      "english_meaning": "used to introduce the second of two contrasting viewpoints",
+      "vietnamese_meaning": "mặt khác",
+      "example": "Cities offer jobs. On the other hand, they are crowded and costly.",
+      "synonyms": "conversely, however",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "in contrast",
+      "english_meaning": "used to compare two clearly different things",
+      "vietnamese_meaning": "ngược lại, trái lại",
+      "example": "Rural areas are emptying. In contrast, cities keep growing.",
+      "synonyms": "conversely, by comparison",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "rather",
+      "phonetic": "/ˈrɑː.ðər/",
+      "english_meaning": "used to correct or replace what was just said",
+      "vietnamese_meaning": "đúng hơn là, mà là",
+      "example": "The problem is not funding, but rather management.",
+      "synonyms": "instead, more precisely",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "unlike",
+      "phonetic": "/ʌnˈlaɪk/",
+      "english_meaning": "different from; in contrast to",
+      "vietnamese_meaning": "không giống như",
+      "example": "Unlike its neighbours, the country taxes fuel heavily.",
+      "synonyms": "in contrast to, as opposed to",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "as opposed to",
+      "english_meaning": "in contrast with; rather than",
+      "vietnamese_meaning": "trái với, chứ không phải",
+      "example": "Funding should target prevention as opposed to treatment.",
+      "synonyms": "rather than, unlike",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "and",
+      "phonetic": "/ænd/",
+      "english_meaning": "used to connect words or ideas of the same kind",
+      "vietnamese_meaning": "và",
+      "example": "The scheme is cheap and easy to administer.",
+      "synonyms": "plus, as well as",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "moreover",
+      "phonetic": "/mɔːˈrəʊ.vər/",
+      "english_meaning": "used to add a further point that supports the argument",
+      "vietnamese_meaning": "hơn nữa",
+      "example": "The plan is costly. Moreover, it has never been tested.",
+      "synonyms": "furthermore, besides, in addition",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "besides",
+      "phonetic": "/bɪˈsaɪdz/",
+      "english_meaning": "in addition to what has been said",
+      "vietnamese_meaning": "bên cạnh đó, hơn nữa",
+      "example": "Besides being expensive, the scheme is hard to enforce.",
+      "synonyms": "moreover, in addition",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "also",
+      "phonetic": "/ˈɔːl.səʊ/",
+      "english_meaning": "in addition; too",
+      "vietnamese_meaning": "cũng, ngoài ra",
+      "example": "The reform also reduced waiting times.",
+      "synonyms": "too, as well",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "in addition",
+      "english_meaning": "used to introduce a further point",
+      "vietnamese_meaning": "ngoài ra, thêm vào đó",
+      "example": "In addition, the policy created several thousand jobs.",
+      "synonyms": "moreover, furthermore",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "what is more",
+      "english_meaning": "used to add a point that strengthens the previous one",
+      "vietnamese_meaning": "hơn thế nữa",
+      "example": "The drug is cheap; what is more, it has few side effects.",
+      "synonyms": "moreover, furthermore",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "not to mention",
+      "english_meaning": "used to add something further, often as an afterthought",
+      "vietnamese_meaning": "chưa kể đến",
+      "example": "It wastes money, not to mention time.",
+      "synonyms": "let alone, besides",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "coupled with",
+      "english_meaning": "combined with; together with",
+      "vietnamese_meaning": "kết hợp với, cùng với",
+      "example": "Poor planning, coupled with weak funding, doomed the project.",
+      "synonyms": "together with, alongside",
+      "tags": [
+        "function:addition",
+        "function:cause"
+      ]
+    },
+    {
+      "word": "because",
+      "phonetic": "/bɪˈkɒz/",
+      "english_meaning": "for the reason that",
+      "vietnamese_meaning": "bởi vì",
+      "example": "Rents rose because supply failed to keep up.",
+      "synonyms": "since, as",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "since",
+      "phonetic": "/sɪns/",
+      "english_meaning": "for the reason that; given that",
+      "vietnamese_meaning": "vì, bởi vì",
+      "example": "Since demand is rising, prices will follow.",
+      "synonyms": "because, as",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "therefore",
+      "phonetic": "/ˈðeə.fɔːr/",
+      "english_meaning": "for that reason; as a result",
+      "vietnamese_meaning": "do đó, vì vậy",
+      "example": "The data are incomplete; therefore the conclusion is provisional.",
+      "synonyms": "thus, hence, consequently",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "thus",
+      "phonetic": "/ðʌs/",
+      "english_meaning": "as a result of what has just been said",
+      "vietnamese_meaning": "vì thế, do đó",
+      "example": "Costs fell, thus making the service affordable.",
+      "synonyms": "therefore, hence",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "as a result",
+      "english_meaning": "because of the thing just mentioned",
+      "vietnamese_meaning": "kết quả là",
+      "example": "Funding was cut; as a result, waiting lists grew.",
+      "synonyms": "consequently, therefore",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "owing to",
+      "english_meaning": "because of",
+      "vietnamese_meaning": "do bởi, vì",
+      "example": "The delay was owing to a shortage of materials.",
+      "synonyms": "due to, because of",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "due to",
+      "english_meaning": "caused by; because of",
+      "vietnamese_meaning": "do, bởi vì",
+      "example": "The rise is due to changes in migration.",
+      "synonyms": "owing to, because of",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "for this reason",
+      "english_meaning": "because of what has just been explained",
+      "vietnamese_meaning": "vì lý do này",
+      "example": "For this reason, the committee rejected the proposal.",
+      "synonyms": "therefore, hence",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "so that",
+      "english_meaning": "with the purpose or result that",
+      "vietnamese_meaning": "để mà, sao cho",
+      "example": "Subsidies were introduced so that poorer families could afford care.",
+      "synonyms": "in order that",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "give rise to",
+      "english_meaning": "to cause something to happen or exist",
+      "vietnamese_meaning": "làm nảy sinh, gây ra",
+      "example": "Rapid growth gave rise to serious housing shortages.",
+      "synonyms": "cause, produce, engender",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "stem from",
+      "english_meaning": "to be caused by or originate in",
+      "vietnamese_meaning": "bắt nguồn từ",
+      "example": "The dispute stems from a misreading of the contract.",
+      "synonyms": "originate in, arise from",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "although",
+      "phonetic": "/ɔːlˈðəʊ/",
+      "english_meaning": "despite the fact that",
+      "vietnamese_meaning": "mặc dù",
+      "example": "Although the study is small, its findings are striking.",
+      "synonyms": "though, even though",
+      "tags": [
+        "function:concession",
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "though",
+      "phonetic": "/ðəʊ/",
+      "english_meaning": "despite the fact that; however",
+      "vietnamese_meaning": "mặc dù, tuy nhiên",
+      "example": "It is expensive, though arguably worth it.",
+      "synonyms": "although, however",
+      "tags": [
+        "function:concession",
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "even though",
+      "english_meaning": "despite the fact that, used for emphasis",
+      "vietnamese_meaning": "mặc dù, ngay cả khi",
+      "example": "Even though costs rose, demand held steady.",
+      "synonyms": "although, notwithstanding",
+      "tags": [
+        "function:concession"
+      ]
+    },
+    {
+      "word": "albeit",
+      "phonetic": "/ɔːlˈbiː.ɪt/",
+      "english_meaning": "although; even if (used before an adjective or phrase)",
+      "vietnamese_meaning": "mặc dù, dẫu rằng",
+      "example": "The reform worked, albeit slowly.",
+      "synonyms": "although, though",
+      "tags": [
+        "function:concession"
+      ]
+    },
+    {
+      "word": "in spite of",
+      "english_meaning": "without being affected by; despite",
+      "vietnamese_meaning": "bất chấp, mặc dù",
+      "example": "In spite of the warnings, construction continued.",
+      "synonyms": "despite, notwithstanding",
+      "tags": [
+        "function:concession"
+      ]
+    },
+    {
+      "word": "admittedly",
+      "phonetic": "/ədˈmɪt.ɪd.li/",
+      "english_meaning": "used to concede a point before arguing against it",
+      "vietnamese_meaning": "phải thừa nhận rằng",
+      "example": "Admittedly, the sample was small, but the trend is clear.",
+      "synonyms": "granted, it is true that",
+      "tags": [
+        "function:concession",
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "granted",
+      "phonetic": "/ˈɡrɑːn.tɪd/",
+      "english_meaning": "used to admit that something is true before making a contrary point",
+      "vietnamese_meaning": "cứ cho là, phải công nhận là",
+      "example": "Granted, the cost is high; the alternative is higher.",
+      "synonyms": "admittedly, of course",
+      "tags": [
+        "function:concession"
+      ]
+    },
+    {
+      "word": "while",
+      "phonetic": "/waɪl/",
+      "english_meaning": "although; whereas (used to concede or contrast)",
+      "vietnamese_meaning": "trong khi, mặc dù",
+      "example": "While the theory is elegant, the evidence is weak.",
+      "synonyms": "whereas, although",
+      "tags": [
+        "function:concession",
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "regardless of",
+      "english_meaning": "without being affected by something",
+      "vietnamese_meaning": "bất kể",
+      "example": "The rule applies regardless of income.",
+      "synonyms": "irrespective of, despite",
+      "tags": [
+        "function:concession"
+      ]
+    },
+    {
+      "word": "nevertheless",
+      "english_meaning": "in spite of that; however",
+      "vietnamese_meaning": "tuy vậy, dù sao đi nữa",
+      "example": "The costs are high; nevertheless, the benefits justify them.",
+      "synonyms": "nonetheless, however",
+      "tags": [
+        "function:concession",
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "indeed",
+      "phonetic": "/ɪnˈdiːd/",
+      "english_meaning": "used to emphasise or confirm a preceding statement",
+      "vietnamese_meaning": "thật vậy, quả thực",
+      "example": "The effect is large; indeed, it is the largest recorded.",
+      "synonyms": "in fact, certainly",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "in fact",
+      "english_meaning": "used to add emphasis or correct an impression",
+      "vietnamese_meaning": "trên thực tế",
+      "example": "It is not rare; in fact, it affects one in five.",
+      "synonyms": "indeed, actually",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "particularly",
+      "phonetic": "/pəˈtɪk.jə.lə.li/",
+      "english_meaning": "especially; more than usually",
+      "vietnamese_meaning": "đặc biệt là",
+      "example": "This is true particularly of low-income households.",
+      "synonyms": "especially, notably",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "especially",
+      "phonetic": "/ɪˈspeʃ.əl.i/",
+      "english_meaning": "to a great extent; above all",
+      "vietnamese_meaning": "đặc biệt là",
+      "example": "Air quality matters, especially for children.",
+      "synonyms": "particularly, above all",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "above all",
+      "english_meaning": "most importantly of all",
+      "vietnamese_meaning": "trên hết",
+      "example": "Above all, the policy must be enforceable.",
+      "synonyms": "most importantly, chiefly",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "crucially",
+      "phonetic": "/ˈkruː.ʃəl.i/",
+      "english_meaning": "in a way that is extremely important",
+      "vietnamese_meaning": "điều quan trọng là",
+      "example": "Crucially, the trial included a control group.",
+      "synonyms": "critically, vitally",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "markedly",
+      "phonetic": "/ˈmɑː.kɪd.li/",
+      "english_meaning": "in a way that is very noticeable",
+      "vietnamese_meaning": "rõ rệt, đáng kể",
+      "example": "Outcomes improved markedly after the reform.",
+      "synonyms": "noticeably, significantly",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "significantly",
+      "phonetic": "/sɪɡˈnɪf.ɪ.kənt.li/",
+      "english_meaning": "in a way large enough to be important",
+      "vietnamese_meaning": "một cách đáng kể",
+      "example": "Emissions fell significantly over the decade.",
+      "synonyms": "considerably, markedly",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "clearly",
+      "phonetic": "/ˈklɪə.li/",
+      "english_meaning": "in a way that leaves no doubt",
+      "vietnamese_meaning": "rõ ràng",
+      "example": "Clearly, the current approach is not working.",
+      "synonyms": "evidently, obviously",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "in particular",
+      "english_meaning": "especially; more than others",
+      "vietnamese_meaning": "nói riêng, đặc biệt",
+      "example": "One finding in particular deserves attention.",
+      "synonyms": "especially, notably",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "arguably",
+      "phonetic": "/ˈɑːɡ.ju.ə.bli/",
+      "english_meaning": "used to say something can be argued but is not certain",
+      "vietnamese_meaning": "có thể cho rằng",
+      "example": "This is arguably the most important reform of the decade.",
+      "synonyms": "possibly, conceivably",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "ostensibly",
+      "phonetic": "/ɒsˈten.sə.bli/",
+      "english_meaning": "apparently, but perhaps not really",
+      "vietnamese_meaning": "bề ngoài thì, có vẻ như",
+      "example": "The fund is ostensibly independent of government.",
+      "synonyms": "apparently, seemingly",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "seemingly",
+      "phonetic": "/ˈsiː.mɪŋ.li/",
+      "english_meaning": "appearing to be true, though possibly not",
+      "vietnamese_meaning": "có vẻ như",
+      "example": "The two findings are seemingly contradictory.",
+      "synonyms": "apparently, ostensibly",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "apparently",
+      "phonetic": "/əˈpær.ənt.li/",
+      "english_meaning": "according to what seems or is reported to be true",
+      "vietnamese_meaning": "dường như, hình như",
+      "example": "The decision was apparently taken without consultation.",
+      "synonyms": "seemingly, reportedly",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "presumably",
+      "phonetic": "/prɪˈzjuː.mə.bli/",
+      "english_meaning": "used to say something is probably true",
+      "vietnamese_meaning": "có lẽ, chắc là",
+      "example": "The gap is presumably due to reporting differences.",
+      "synonyms": "probably, likely",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "purportedly",
+      "phonetic": "/pəˈpɔː.tɪd.li/",
+      "english_meaning": "according to what is claimed, though possibly untrue",
+      "vietnamese_meaning": "được cho là",
+      "example": "The document was purportedly written in 1890.",
+      "synonyms": "allegedly, reportedly",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "allegedly",
+      "phonetic": "/əˈledʒ.ɪd.li/",
+      "english_meaning": "said to be the case, but without proof",
+      "vietnamese_meaning": "bị cho là, theo cáo buộc",
+      "example": "The firm allegedly under-reported its emissions.",
+      "synonyms": "purportedly, reportedly",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "to some extent",
+      "english_meaning": "partly, but not completely",
+      "vietnamese_meaning": "ở một mức độ nào đó",
+      "example": "This is true to some extent, though not universally.",
+      "synonyms": "partly, in part",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "by and large",
+      "english_meaning": "generally speaking; on the whole",
+      "vietnamese_meaning": "nhìn chung",
+      "example": "By and large, the reforms have been welcomed.",
+      "synonyms": "generally, on the whole",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "tend to",
+      "english_meaning": "to be likely to do something regularly",
+      "vietnamese_meaning": "có xu hướng",
+      "example": "Younger workers tend to change jobs more often.",
+      "synonyms": "be inclined to, be apt to",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "to a lesser extent",
+      "english_meaning": "less so, but still to some degree",
+      "vietnamese_meaning": "ở mức độ thấp hơn",
+      "example": "This applies to rural areas and, to a lesser extent, to towns.",
+      "synonyms": "less so, partly",
+      "tags": [
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "not",
+      "phonetic": "/nɒt/",
+      "english_meaning": "used to make a word, phrase or clause negative",
+      "vietnamese_meaning": "không",
+      "example": "The evidence does not support that conclusion.",
+      "synonyms": "no, by no means",
+      "tags": [
+        "function:negation"
+      ]
+    },
+    {
+      "word": "neither",
+      "phonetic": "/ˈnaɪ.ðər/",
+      "english_meaning": "not one nor the other of two things",
+      "vietnamese_meaning": "không cái nào trong hai",
+      "example": "Neither explanation fits the data.",
+      "synonyms": "not either",
+      "tags": [
+        "function:negation"
+      ]
+    },
+    {
+      "word": "nor",
+      "phonetic": "/nɔːr/",
+      "english_meaning": "and not; used after a negative statement",
+      "vietnamese_meaning": "cũng không",
+      "example": "The plan is not cheap, nor is it quick.",
+      "synonyms": "and not, neither",
+      "tags": [
+        "function:negation"
+      ]
+    },
+    {
+      "word": "never",
+      "phonetic": "/ˈnev.ər/",
+      "english_meaning": "at no time; not ever",
+      "vietnamese_meaning": "không bao giờ",
+      "example": "The policy was never formally adopted.",
+      "synonyms": "at no time",
+      "tags": [
+        "function:negation"
+      ]
+    },
+    {
+      "word": "hardly",
+      "phonetic": "/ˈhɑːd.li/",
+      "english_meaning": "almost not; scarcely",
+      "vietnamese_meaning": "hầu như không",
+      "example": "The change hardly affected overall costs.",
+      "synonyms": "scarcely, barely",
+      "tags": [
+        "function:negation",
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "scarcely",
+      "phonetic": "/ˈskeəs.li/",
+      "english_meaning": "almost not at all",
+      "vietnamese_meaning": "hầu như không",
+      "example": "The report scarcely mentions the environmental cost.",
+      "synonyms": "hardly, barely",
+      "tags": [
+        "function:negation",
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "barely",
+      "phonetic": "/ˈbeə.li/",
+      "english_meaning": "only just; almost not",
+      "vietnamese_meaning": "chỉ vừa đủ, hầu như không",
+      "example": "Wages barely kept pace with inflation.",
+      "synonyms": "hardly, scarcely",
+      "tags": [
+        "function:negation",
+        "function:hedge"
+      ]
+    },
+    {
+      "word": "by no means",
+      "english_meaning": "not at all; certainly not",
+      "vietnamese_meaning": "hoàn toàn không",
+      "example": "The matter is by no means settled.",
+      "synonyms": "not at all, in no way",
+      "tags": [
+        "function:negation",
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "far from",
+      "english_meaning": "not at all; the opposite of",
+      "vietnamese_meaning": "còn lâu mới, hoàn toàn không",
+      "example": "The results are far from conclusive.",
+      "synonyms": "by no means, anything but",
+      "tags": [
+        "function:negation"
+      ]
+    },
+    {
+      "word": "let alone",
+      "english_meaning": "used to say something is even less likely than what was mentioned",
+      "vietnamese_meaning": "chứ đừng nói đến",
+      "example": "Few can afford rent, let alone a mortgage.",
+      "synonyms": "much less, not to mention",
+      "tags": [
+        "function:negation",
+        "function:addition"
+      ]
+    },
+    {
+      "word": "in other words",
+      "english_meaning": "used to restate something more clearly",
+      "vietnamese_meaning": "nói cách khác",
+      "example": "Demand outstripped supply; in other words, prices rose.",
+      "synonyms": "that is to say, put differently",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "that is to say",
+      "english_meaning": "used to clarify or restate a point",
+      "vietnamese_meaning": "tức là, nghĩa là",
+      "example": "It halved, that is to say it fell by fifty per cent.",
+      "synonyms": "in other words, namely",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "for instance",
+      "english_meaning": "used to introduce an example",
+      "vietnamese_meaning": "ví dụ như",
+      "example": "Some cities, Tokyo for instance, have solved this.",
+      "synonyms": "for example, such as",
+      "tags": [
+        "function:substantiate"
+      ]
+    },
+    {
+      "word": "in light of",
+      "english_meaning": "considering; because of new information",
+      "vietnamese_meaning": "xét theo, trước tình hình",
+      "example": "In light of these findings, the guidance was revised.",
+      "synonyms": "considering, given",
+      "tags": [
+        "function:cause",
+        "function:substantiate"
+      ]
+    },
+    {
+      "word": "on balance",
+      "english_meaning": "after considering all the arguments",
+      "vietnamese_meaning": "xét cho cùng, cân nhắc mọi mặt",
+      "example": "On balance, the benefits outweigh the risks.",
+      "synonyms": "all things considered, overall",
+      "tags": [
+        "function:hedge",
+        "function:concession"
+      ]
+    },
+    {
+      "word": "in conclusion",
+      "english_meaning": "used to introduce a final summary",
+      "vietnamese_meaning": "tóm lại, kết luận là",
+      "example": "In conclusion, reform is necessary but not sufficient.",
+      "synonyms": "to sum up, overall",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "nonetheless",
+      "phonetic": "/ˌnʌn.ðəˈles/",
+      "english_meaning": "in spite of that; nevertheless",
+      "vietnamese_meaning": "tuy vậy, dù thế",
+      "example": "The trial was small; nonetheless, its results were replicated.",
+      "synonyms": "nevertheless, however",
+      "tags": [
+        "function:contrast",
+        "function:concession"
+      ]
+    },
+    {
+      "word": "conversely",
+      "phonetic": "/ˈkɒn.vɜː.sli/",
+      "english_meaning": "in an opposite way; from the other point of view",
+      "vietnamese_meaning": "ngược lại",
+      "example": "Cities are growing; conversely, villages are emptying.",
+      "synonyms": "on the contrary, in contrast",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "whereas",
+      "phonetic": "/weərˈæz/",
+      "english_meaning": "in contrast with the fact that",
+      "vietnamese_meaning": "trong khi đó, ngược lại",
+      "example": "The north relies on coal, whereas the south uses gas.",
+      "synonyms": "while, in contrast",
+      "tags": [
+        "function:contrast",
+        "function:concession"
+      ]
+    },
+    {
+      "word": "notwithstanding",
+      "phonetic": "/ˌnɒt.wɪθˈstæn.dɪŋ/",
+      "english_meaning": "in spite of; despite",
+      "vietnamese_meaning": "mặc dù, bất chấp",
+      "example": "Notwithstanding the cost, the project went ahead.",
+      "synonyms": "despite, in spite of",
+      "tags": [
+        "function:concession",
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "despite",
+      "phonetic": "/dɪˈspaɪt/",
+      "english_meaning": "without being affected by",
+      "vietnamese_meaning": "bất chấp, mặc dù",
+      "example": "Despite repeated warnings, the practice continued.",
+      "synonyms": "in spite of, notwithstanding",
+      "tags": [
+        "function:concession"
+      ]
+    },
+    {
+      "word": "alternatively",
+      "phonetic": "/ɔːlˈtɜː.nə.tɪv.li/",
+      "english_meaning": "used to suggest another possibility",
+      "vietnamese_meaning": "hoặc là, thay vào đó",
+      "example": "Raise taxes; alternatively, cut spending.",
+      "synonyms": "instead, or else",
+      "tags": [
+        "function:contrast"
+      ]
+    },
+    {
+      "word": "furthermore",
+      "phonetic": "/ˌfɜː.ðəˈmɔːr/",
+      "english_meaning": "in addition; besides",
+      "vietnamese_meaning": "hơn nữa, ngoài ra",
+      "example": "The scheme is costly. Furthermore, it is hard to police.",
+      "synonyms": "moreover, in addition",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "additionally",
+      "phonetic": "/əˈdɪʃ.ən.əl.i/",
+      "english_meaning": "as an extra point",
+      "vietnamese_meaning": "thêm vào đó",
+      "example": "Additionally, the report calls for stricter limits.",
+      "synonyms": "moreover, furthermore",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "likewise",
+      "phonetic": "/ˈlaɪk.waɪz/",
+      "english_meaning": "in the same way; similarly",
+      "vietnamese_meaning": "tương tự, cũng vậy",
+      "example": "Exports fell; imports likewise declined.",
+      "synonyms": "similarly, equally",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "similarly",
+      "phonetic": "/ˈsɪm.əl.ə.li/",
+      "english_meaning": "in a like manner",
+      "vietnamese_meaning": "tương tự như vậy",
+      "example": "Similarly, rural clinics reported longer waits.",
+      "synonyms": "likewise, equally",
+      "tags": [
+        "function:addition"
+      ]
+    },
+    {
+      "word": "hence",
+      "phonetic": "/hens/",
+      "english_meaning": "for this reason; therefore",
+      "vietnamese_meaning": "do đó, vì thế",
+      "example": "Supply is limited, hence the high price.",
+      "synonyms": "therefore, thus",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "consequently",
+      "phonetic": "/ˈkɒn.sɪ.kwənt.li/",
+      "english_meaning": "as a result",
+      "vietnamese_meaning": "kết quả là, do đó",
+      "example": "Rain failed; consequently, harvests collapsed.",
+      "synonyms": "therefore, as a result",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "thereby",
+      "phonetic": "/ˌðeəˈbaɪ/",
+      "english_meaning": "by that means; with the result that",
+      "vietnamese_meaning": "nhờ đó, qua đó",
+      "example": "The law capped rents, thereby easing pressure on tenants.",
+      "synonyms": "thus, in doing so",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "accordingly",
+      "phonetic": "/əˈkɔː.dɪŋ.li/",
+      "english_meaning": "in a way that is appropriate to what has happened",
+      "vietnamese_meaning": "theo đó, tương ứng",
+      "example": "Demand shifted and prices moved accordingly.",
+      "synonyms": "correspondingly, therefore",
+      "tags": [
+        "function:cause"
+      ]
+    },
+    {
+      "word": "notably",
+      "phonetic": "/ˈnəʊ.tə.bli/",
+      "english_meaning": "especially; in particular",
+      "vietnamese_meaning": "đáng chú ý, đặc biệt là",
+      "example": "Several countries, notably Japan, face this problem.",
+      "synonyms": "particularly, especially",
+      "tags": [
+        "function:emphasis"
+      ]
+    },
+    {
+      "word": "contrary",
+      "phonetic": "/ˈkɒn.trə.ri/",
+      "english_meaning": "opposite in nature or direction",
+      "vietnamese_meaning": "trái ngược",
+      "example": "Contrary to expectations, turnout rose.",
+      "synonyms": "opposite, opposed",
+      "tags": [
+        "function:contrast"
+      ]
+    }
+  ]
+}
