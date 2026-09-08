@@ -39,12 +39,7 @@ nginx/      cấu hình reverse proxy (tùy chọn, không dùng khi chạy Dock
 docs/       ROADMAP.md, PHASES.md
 backups/    dump database ở máy bạn — không commit
 render.yaml Render Blueprint — Render mặc định tìm ở thư mục gốc
-neon.ts     cấu hình Neon CLI — CLI tìm ở thư mục gốc
 ```
-
-> `package.json` / `package-lock.json` ở thư mục gốc **không phải** của app.
-> Chúng chỉ tồn tại để `neon.ts` import được `@neon/config`. Dependency thật của
-> dự án nằm trong `client/` và `server/`.
 
 ## Cài đặt
 

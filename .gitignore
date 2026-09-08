@@ -160,3 +160,11 @@ PHASES.md
 
 # Local database dumps live here; never commit them.
 backups/
+
+# Personal tool
+/neon.ts
+/skills-lock.json
+/.claude/
+
+/package.json
+/package-lock.json

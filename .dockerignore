@@ -2,6 +2,7 @@
 .gitignore
 .gitattributes
 .agents
+.claude
 
 **/node_modules
 client/dist
