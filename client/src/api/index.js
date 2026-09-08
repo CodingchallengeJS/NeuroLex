@@ -48,6 +48,22 @@ export const fetchNotebooksFiltered = ({ tags = [], q = '' } = {}) => {
   return apiFetch(qs ? `/notebooks?${qs}` : '/notebooks');
 };
 
+// --- Question bank ---
+// only_studied has its own endpoint: it is the feature the bank exists for, and
+// unlike the rest of the filters it cannot be answered without a login.
+export const fetchQuestions = ({ tags = [], only_studied = false, ...rest } = {}) => {
+  const params = new URLSearchParams();
+  tags.forEach((t) => params.append('tag', t));
+  Object.entries(rest).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '' || value === false) return;
+    params.set(key, value === true ? '1' : String(value));
+  });
+  const qs = params.toString();
+  const base = only_studied ? '/questions/studied' : '/questions';
+  return apiFetch(qs ? `${base}?${qs}` : base);
+};
+export const submitQuestionAttempt = (questionId, selectedKey) => apiFetch('/questions/attempt', { method: 'POST', body: JSON.stringify({ question_id: questionId, selected_key: selectedKey }) });
+
 // --- Word tags ---
 export const fetchVocabTags = (vocabId) => apiFetch(`/vocabs/${vocabId}/tags`);
 export const setVocabTags = (vocabId, tags) => apiFetch(`/vocabs/${vocabId}/tags`, { method: 'PUT', body: JSON.stringify({ tags }) });

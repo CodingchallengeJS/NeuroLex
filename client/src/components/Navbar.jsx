@@ -20,6 +20,7 @@ export default function Navbar() {
         <div className="nav-links">
           <Link to="/">Trang chủ</Link>
           <Link to="/notebooks">Sổ tay</Link>
+          <Link to="/questions">Câu hỏi</Link>
         </div>
         <div className="nav-actions">
           <button className="icon-btn" onClick={() => setShowSettings(true)}>

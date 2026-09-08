@@ -5,6 +5,7 @@ import Navbar from './components/Navbar.jsx';
 import HomePage from './pages/HomePage.jsx';
 import NotebooksPage from './pages/NotebooksPage.jsx';
 import QuizPage from './pages/QuizPage.jsx';
+import QuestionsPage from './pages/QuestionsPage.jsx';
 import StudyPage from './pages/StudyPage.jsx';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
               <Route path="/notebooks" element={<NotebooksPage />} />
               <Route path="/study/:notebookId" element={<StudyPage />} />
               <Route path="/quiz/:bucket" element={<QuizPage />} />
+              <Route path="/questions" element={<QuestionsPage />} />
             </Routes>
           </main>
         </div>

@@ -33,6 +33,16 @@ const SET = {
 // "The word "representative" is closest in meaning to which of following?"
 const TARGET_RE = /\b[Tt]he\s+(?:word|phrase|expression)\s+"([^"]+)"/;
 
+// Shorter than this many words counts as an easy question. Must stay in step
+// with migrations/007_question_length.sql, which labels rows already in the
+// database; this line labels rows as they are imported. See that file for why
+// 45 and not something rounder.
+const EASY_MAX_WORDS = 45;
+
+// Same definition the migration uses: whitespace-separated tokens of the
+// trimmed prompt.
+const countWords = (text) => String(text || '').trim().split(/\s+/).filter(Boolean).length;
+
 function loadOverrides() {
   if (!fs.existsSync(OVERRIDES_FILE)) return {};
   const raw = JSON.parse(fs.readFileSync(OVERRIDES_FILE, 'utf-8'));
@@ -55,7 +65,7 @@ async function main() {
 
   const client = await pool.connect();
   const unmatchedTargets = new Set();
-  const stats = { questions: 0, targetLinks: 0, optionLinks: 0, viaExact: 0, viaLemma: 0, viaOverride: 0 };
+  const stats = { questions: 0, targetLinks: 0, optionLinks: 0, viaExact: 0, viaLemma: 0, viaOverride: 0, easy: 0, hard: 0 };
 
   try {
     await client.query('BEGIN');
@@ -77,14 +87,19 @@ async function main() {
       // Trailing spaces survive the source text ("account for "), so trim.
       const target = targetMatch ? targetMatch[1].trim() : null;
 
+      const wordCount = countWords(q.question);
+
       const qRes = await client.query(
-        `INSERT INTO questions (set_id, external_id, prompt, question_type, options, answer_key)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO questions (set_id, external_id, prompt, question_type, options, answer_key,
+                                word_count, difficulty)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT (set_id, external_id) DO UPDATE SET
            prompt = EXCLUDED.prompt,
            question_type = EXCLUDED.question_type,
            options = EXCLUDED.options,
-           answer_key = EXCLUDED.answer_key
+           answer_key = EXCLUDED.answer_key,
+           word_count = EXCLUDED.word_count,
+           difficulty = EXCLUDED.difficulty
          RETURNING id`,
         [
           setId,
@@ -92,9 +107,12 @@ async function main() {
           q.question,
           target ? 'word_in_context' : 'general',
           JSON.stringify(q.options),
-          q.answer
+          q.answer,
+          wordCount,
+          wordCount < EASY_MAX_WORDS ? 'easy' : 'hard'
         ]
       );
+      stats[wordCount < EASY_MAX_WORDS ? 'easy' : 'hard'] += 1;
       const questionId = qRes.rows[0].id;
       stats.questions += 1;
 
@@ -136,6 +154,7 @@ async function main() {
     console.log(`   Target links: ${stats.targetLinks} · option links: ${stats.optionLinks}`);
     console.log(`   Resolved by: exact ${stats.viaExact}, lemma ${stats.viaLemma}, override ${stats.viaOverride}`);
     console.log(`   Questions linked to at least one vocabulary word: ${linked.rows[0].c} / ${stats.questions}`);
+    console.log(`   Length split: ${stats.easy} easy (under ${EASY_MAX_WORDS} words), ${stats.hard} hard`);
 
     if (unmatchedTargets.size > 0) {
       const list = [...unmatchedTargets].sort();

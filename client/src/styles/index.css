@@ -1343,3 +1343,166 @@ p { font-size: 1rem; color: var(--text-soft); }
   gap: 0.35rem;
   flex-shrink: 0;
 }
+
+
+/* ---------- Question bank page ----------
+   Reuses the quiz classes (.quiz-option, .quiz-progress-*) so answering a
+   question feels like the flashcard quiz; only the parts that differ - a long
+   sentence prompt instead of a single word, and the word/progress footer - get
+   their own rules. */
+.questions-page {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.questions-filters {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.q-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.q-filter-row .search-input-wrapper { flex: 1 1 260px; }
+/* The sliding thumb is positioned as 1/n of the track, which only lines up if
+   every segment is the same width. An inline-flex track sizes each segment to
+   its own label instead, so "Xáo trộn" and "Theo số" come out different widths
+   and the thumb sits under the wrong edge. A grid with equal auto-columns keeps
+   the track shrink-to-fit while making every column as wide as the longest
+   label. Separate class so the chart and theme toggles keep their own tuning. */
+.segmented-even {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+.q-group { display: flex; align-items: center; gap: 0.5rem; }
+.q-group-label {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+/* The length label rides in the question header, so it stays quieter than the
+   tag chips in the filter bar. */
+.q-diff {
+  margin-left: 0.6rem;
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+.q-diff.easy {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
+}
+.q-diff.hard {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+}
+.q-tag-row { gap: 0.4rem; }
+.q-hint { color: var(--text-soft); font-size: 0.85rem; }
+.q-count {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+}
+.questions-filters input[type="checkbox"]:disabled + *,
+.q-filter-row .toggle-label:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }
+
+.questions-card { padding: 1.75rem 2rem; }
+.q-prompt {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text);
+  margin: 0 0 1.5rem;
+}
+/* The quotes are part of the sentence; the split that finds the target word
+   eats them, so they are painted back on rather than lost. */
+.q-target { color: var(--primary); font-weight: 700; }
+.q-target::before, .q-target::after { content: '"'; opacity: 0.55; }
+
+/* Options here are single words, not the quiz's expandable meaning cards. */
+.questions-card .quiz-option {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+}
+.questions-card .quiz-option.disabled { cursor: default; }
+.questions-card .opt-main-text { font-size: 1.05rem; text-align: left; }
+.q-option-key {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.q-result {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.q-result.is-correct { border-color: var(--success); }
+.q-result.is-wrong { border-color: var(--danger); }
+.q-result-verdict { font-weight: 600; }
+.q-result.is-correct .q-result-verdict { color: var(--success); }
+.q-result.is-wrong .q-result-verdict { color: var(--danger); }
+.q-explanation { margin: 0; color: var(--text-soft); font-size: 0.9rem; }
+
+.q-progress-change, .q-words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.q-words-label { color: var(--text-soft); font-size: 0.82rem; margin-right: 0.25rem; }
+/* Words you have never studied stay faint: the point of the footer is to show
+   which of YOUR words this sentence just exercised. */
+.q-word { border: 1px solid transparent; opacity: 0.6; }
+.q-word.studied {
+  opacity: 1;
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+}
+.q-word.due {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+.q-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.q-studied-hint { color: var(--text-soft); font-size: 0.85rem; }
+
+@media (max-width: 780px) {
+  .questions-card .quiz-options { grid-template-columns: 1fr; }
+  .questions-card { padding: 1.25rem; }
+}

@@ -227,14 +227,112 @@ the database answers, `503 degraded` when it does not, and sets
 `Cache-Control: no-store` so a proxy cannot serve a cached 200 over a real
 outage. Both paths tested.
 
-## ⬜ Phase E — Question UI + studied-word filter + SRS feedback
+## ✅ Phase E — Question UI + studied-word filter + SRS feedback (done, live)
 
-- `GET /api/questions/studied` with checkbox filters: only studied, due now,
-  previously wrong, unanswered
-- `applyQuestionResult`: correct promotes a level; wrong steps down **one** level
-  (`max(level - 1, -1)`) instead of the flashcard path's drop straight to −1.
-  Only touches words the user already has progress on.
-- `/questions` page reusing the `.quiz-*` classes and the reveal-then-next flow
+`GET /api/questions` · `GET /api/questions/studied` · `POST /api/questions/attempt` ·
+`applyQuestionResult` · `pages/QuestionsPage.jsx`
+
+The 427 questions are now reachable. Browsing is open to everyone; the four
+progress filters (`only_studied`, `due_now`, `got_wrong`, `unanswered`) need a
+login, because they are questions about one person's history — anonymous callers
+asking for them get a 401 rather than a silently unfiltered list.
+
+Measured on the live local database:
+
+| | |
+|---|---|
+| questions in the bank | 427 |
+| questions touching a word **user 1** has studied | **204** |
+| …with a word due for review right now | **180** |
+| user 3 (159 studied words) | 34 questions |
+| questions whose answer can move the SRS | 230 (186 target + 44 correct-option) |
+
+### The gentler SRS rule
+
+`applyQuestionResult` promotes one level on a hit and steps down exactly one on
+a miss, against the flashcard path's drop from level 4 straight to −1. Verified
+in the browser as well as in tests: missing `conceal` moved it *nhớ sâu → cấp 4*,
+not back to relearning.
+
+Two details worth keeping:
+
+- **`Math.min(currentLevel, Math.max(currentLevel - 1, -1))`**, not the plan's
+  `max(level - 1, -1)`. Repeated flashcard misses can dig a word below −1, and
+  the simpler form would then *promote* it on a wrong answer.
+- **Only the target and the correct answer are scored.** Three of the four
+  options are distractors: question 1 links `distinctive` purely as a wrong
+  choice, so demoting it after a miss on `representative` would be noise. Tested
+  explicitly — a wrong-option word keeps its level.
+
+### Verification
+
+**38 API tests passing** against a real server and two real users with different
+studied words, covering: paging and the 50-row limit cap, the four progress
+filters, `got_wrong` reading the *latest* attempt (a since-corrected question
+drops out), the unknown-tag guard, tag / notebook / text filters matching direct
+SQL counts, the SRS rules above, and that answering about an unstudied word
+records the attempt but creates no progress row. Both test accounts deleted
+afterwards; the database ends byte-identical to how it started.
+
+### Client
+
+`/questions` in the navbar. Reuses `.quiz-option` / `.quiz-progress-*` and the
+reveal-then-next flow, so it behaves like the existing quiz. The prompt's quoted
+target word is highlighted, and after answering, the words the sentence
+exercises appear as chips — yours lit, the rest faint — with the level change
+the answer caused. `?notebook_id=` narrows the bank to one notebook's words.
+
+## ✅ Shuffle + easy/hard by length (done, live)
+
+`007_question_length.sql` · `import-question-bank.js` · `QuestionsPage.jsx`
+
+Practising in import order means meeting the same questions in the same
+sequence every session, so the bank is now **shuffled by default**, and split
+easy/hard by how much reading each question takes.
+
+### The threshold is 45 words, not 80
+
+The 80-word guess does not fit the data. Measured over all 427 questions:
+
+| min | p25 | median | p75 | p90 | max |
+|---|---|---|---|---|---|
+| 19 | 35 | **42** | 50 | 57 | **83** |
+
+The whole bank is short — **the longest question in it is 83 words**, so a
+threshold of 80 would label 424 easy and leave 3 hard. 45 sits just above the
+median, so "easy" means clearly shorter than typical and both sides stay big
+enough to practise from:
+
+| | count | words |
+|---|---|---|
+| easy | **250** | 19–44 |
+| hard | **177** | 45–83 |
+
+`word_count` is stored as the fact and `difficulty` as the label derived from
+it, so re-tuning is one UPDATE with no recomputation. The migration labels rows
+already in the database and the importer labels rows as they arrive — both use
+the same definition, verified by re-running the importer and getting the same
+250 / 177.
+
+### Shuffle that survives pagination
+
+`ORDER BY random()` is re-evaluated per query, so paging a shuffled list shows
+some questions twice and never reaches others. The order is
+`MD5(id || seed)` instead: the server picks a seed, returns it, and the client
+sends it back for each page. "Trộn lại" asks for a new one. Tested by paging the
+entire bank — **427 rows, 427 unique, every id covered**.
+
+`order=` also takes `shortest` / `longest` / `sequence`, and `difficulty=` takes
+`easy` / `hard`; both combine with every existing filter.
+
+**18 API tests passing.** Applied to Render as well: **0 of 427** questions
+differ from local.
+
+Found while building: the sliding `.segmented` thumb is positioned as 1/n of the
+track, which only lines up when every segment is the same width — an inline-flex
+track sizes each to its own label. Added `.segmented-even` (a grid with equal
+auto-columns) rather than changing the shared class behind the chart and theme
+toggles.
 
 ## ⬜ Phase F — Tag-aware distractors
 

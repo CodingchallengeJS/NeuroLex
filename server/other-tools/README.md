@@ -172,6 +172,59 @@ createdb neurolex_pristine
 DATABASE_URL=postgres://user:pass@localhost:5432/neurolex_pristine npm run db:setup
 ```
 
+### `sync-user-progress.js <userIdLocal> <userIdRemote> [--apply] [--target=render|neon]`
+
+Gộp tiến độ ôn tập (`user_vocab_progress`) của **một** user từ DB máy bạn sang
+bản deploy.
+
+```bash
+npm run sync:progress -- 1 1              # xem trước, không ghi gì
+npm run sync:progress -- 1 1 --apply      # ghi thật
+npm run sync:progress -- 1 1 --target=neon --apply
+```
+
+Luật gộp khi cả hai bên đều có từ đó:
+
+| | |
+|---|---|
+| `repetition_level` | lấy **cấp cao hơn** — giữ mức nhớ tốt nhất |
+| `next_review_at` | lấy **ngày xa hơn** — giữ khoảng cách đã đạt được |
+
+Hai giá trị lấy độc lập nhau. Các cột còn lại đi theo: `interval_days` lấy từ
+bên thắng về cấp độ, `correct_streak` / `total_reviews` lấy max (không cộng, vì
+DB deploy thường đã là bản sao của DB local — cộng vào sẽ đếm trùng),
+`last_reviewed_at` lấy mốc gần nhất, `created_at` lấy sớm nhất, `mastered` tính
+lại từ cấp độ thắng.
+
+**Khớp theo `vocabulary.word`, không theo `vocab_id`.** Hai DB được seed riêng
+nên id lệch nhau: đo trên đúng cặp DB này, chỉ **348 / 2944** id trỏ về cùng một
+từ. Chép thẳng `vocab_id` sẽ gắn tiến độ của bạn vào những từ hoàn toàn khác.
+
+Chỉ **thêm hoặc nâng**, không bao giờ hạ cấp hay xoá dòng nào. Từ nào không có
+trong `vocabulary` phía đích sẽ bị bỏ qua và liệt kê ra (chạy `sync-content.sql`
+trước nếu bạn kỳ vọng nó phải có).
+
+Phần gộp chạy bằng `GREATEST`/`LEAST` ngay trong 1 transaction trên DB đích, nên
+nếu bạn vừa ôn xong trên web giữa lúc sync thì kết quả đó cũng được gộp vào chứ
+không bị ghi đè. Chạy lại nhiều lần không đổi gì thêm.
+
+Phía local đọc từ `DB_*` chứ **không** dùng `DATABASE_URL` — vì trong `.env` của
+dự án này `DATABASE_URL` đang trỏ tới bản deploy.
+
+### `sync-render-to-neon.js [--apply]`
+
+Chép **toàn bộ** DB Render đè lên Neon (Neon chỉ là bản sao dùng để thử).
+
+```bash
+npm run sync:neon             # xem trước
+npm run sync:neon -- --apply  # xoá Neon và chép lại
+```
+
+Đọc `RENDER_DATABASE_URL` và `DATABASE_URL_UNPOOLED` trong `server/.env`. Nếu
+chỉ có URL pooled, tool tự bỏ `-pooler` để dùng endpoint trực tiếp — pgbouncer
+không chịu được thao tác restore. Việc nặng do `copy-database.js` làm (đối chiếu
+số dòng từng bảng sau khi chép). Không bao giờ chép ngược Neon → Render.
+
 ### `translate-api.js`
 
 | | |

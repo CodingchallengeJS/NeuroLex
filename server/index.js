@@ -1416,6 +1416,58 @@ async function applyQuizResult(client, userId, vocabId, correctCount) {
   return ur.rows[0];
 }
 
+
+// A context question is a harder exercise than a flashcard: the word has to be
+// recognised inside a sentence rather than recalled from a bare prompt. The
+// flashcard path drops a missed word from level 4 straight to -1, erasing weeks
+// of spacing - applying that to the harder exercise would punish the learner
+// for attempting it. So a miss steps down exactly one level.
+//
+// It also only ever touches a word the learner already studied. Answering a
+// question about an unknown word records the attempt but creates no progress
+// row, which would otherwise flood the review queue with words that were never
+// in any notebook.
+async function applyQuestionResult(client, userId, vocabId, isCorrect) {
+  const now = new Date();
+  const cur = await client.query(
+    'SELECT * FROM user_vocab_progress WHERE user_id = $1 AND vocab_id = $2 LIMIT 1',
+    [userId, vocabId]
+  );
+  if (cur.rowCount === 0) return null;
+
+  const row = cur.rows[0];
+  const currentLevel = Number.isInteger(row.repetition_level) ? row.repetition_level : 0;
+
+  // The outer Math.min is the guard that matters: repeated flashcard misses can
+  // dig a word below -1, and a bare max(level - 1, -1) would then *promote* it
+  // on a wrong answer.
+  const newLevel = isCorrect
+    ? (currentLevel < 0 ? 0 : Math.min(currentLevel + 1, 4))
+    : Math.min(currentLevel, Math.max(currentLevel - 1, -1));
+
+  const correctStreak = isCorrect ? (row.correct_streak || 0) + 1 : 0;
+  const intervalDays = getIntervalDaysForLevel(newLevel);
+  const nextReviewAt = new Date(now.getTime() + intervalDays * 24 * 3600 * 1000);
+
+  const ur = await client.query(
+    `UPDATE user_vocab_progress
+        SET repetition_level = $1,
+            interval_days = $2,
+            next_review_at = $3,
+            last_reviewed_at = $4,
+            correct_streak = $5,
+            total_reviews = $6,
+            mastered = $7,
+            updated_at = NOW()
+      WHERE user_id = $8 AND vocab_id = $9
+      RETURNING *`,
+    [newLevel, intervalDays, nextReviewAt, now, correctStreak,
+      (row.total_reviews || 0) + 1, newLevel >= 4, userId, vocabId]
+  );
+
+  return { previous_level: currentLevel, ...ur.rows[0] };
+}
+
 app.post('/api/quiz/submit', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
   const results = req.body.results; // Array of { vocab_id, correct_count }
@@ -1446,6 +1498,312 @@ app.post('/api/quiz/submit', authenticateToken, async (req, res) => {
     await client.query('ROLLBACK');
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+
+/* ---------- QUESTION BANK ---------- */
+
+// Phase D loaded 427 questions and 557 word links. The link table is what makes
+// "questions built on words I have studied" a join instead of a text scan, and
+// that is the feature this section exists for: meeting a word again inside a
+// real sentence is the one thing a flashcard cannot do.
+
+const QUESTION_LIMIT_MAX = 50;
+
+function truthyParam(value) {
+  if (value === undefined || value === null) return false;
+  return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
+}
+
+// Which of a question's linked words the spaced repetition should actually
+// move. Not all of them are being tested: three of the four options are
+// distractors. Question 1 links "distinctive" only because it is a *wrong*
+// choice, so demoting it after a miss on "representative" would be noise.
+//
+// Scored = the quoted target, plus the word behind the correct answer. In a
+// "closest in meaning" item the key IS a synonym of the target, so choosing it
+// exercises that word too.
+function scoredVocabIds(links, options, answerKey) {
+  const correct = String((options || {})[answerKey] || '').trim().toLowerCase();
+  const ids = new Set();
+  for (const link of links) {
+    const surface = String(link.surface_form || '').trim().toLowerCase();
+    if (link.role === 'target' || (correct && surface === correct)) {
+      ids.add(Number(link.vocab_id));
+    }
+  }
+  return [...ids];
+}
+
+// Shared by GET /api/questions and GET /api/questions/studied - same filters,
+// the studied route simply forces only_studied on and requires a login.
+function questionFilters(req, { forceStudied }) {
+  const vals = [];
+  let filters = '';
+  // $1 is always the caller, so extra params start at $2.
+  const add = (value) => { vals.push(value); return '$' + (vals.length + 1); };
+
+  const setSlug = String(req.query.set || '').trim();
+  if (setSlug) filters += ` AND qs.slug = ${add(setSlug)}`;
+
+  const search = String(req.query.q || '').trim();
+  if (search) {
+    // options is JSONB, so ::text lets one pattern cover prompt and choices.
+    const p = add('%' + search + '%');
+    filters += ` AND (q.prompt ILIKE ${p} OR q.options::text ILIKE ${p})`;
+  }
+
+  const notebookId = req.query.notebook_id ? Number(req.query.notebook_id) : null;
+  if (Number.isInteger(notebookId)) {
+    filters += ` AND EXISTS (
+      SELECT 1 FROM question_vocab qvn
+      JOIN notebook_vocab nvn ON nvn.vocab_id = qvn.vocab_id
+      WHERE qvn.question_id = q.id AND nvn.notebook_id = ${add(notebookId)})`;
+  }
+
+  // easy / hard, set from the prompt's word count by migration 007.
+  const difficulty = String(req.query.difficulty || '').trim().toLowerCase();
+  if (difficulty) filters += ` AND q.difficulty = ${add(difficulty)}`;
+
+  const tagSlugs = tagSlugsFromQuery(req.query.tag);
+  if (tagSlugs.length > 0) {
+    // Same faceted rule as the notebook list: OR within a kind, AND across
+    // kinds, with the `> 0` guard so an unknown slug matches nothing rather
+    // than everything.
+    const p = add(tagSlugs);
+    filters += `
+      AND (SELECT COUNT(DISTINCT kind) FROM tags WHERE slug = ANY(${p})) > 0
+      AND (
+        SELECT COUNT(DISTINCT tq.kind)
+        FROM question_vocab qvt
+        JOIN vocab_tags vtq ON vtq.vocab_id = qvt.vocab_id
+        JOIN tags tq ON tq.id = vtq.tag_id
+        WHERE qvt.question_id = q.id AND tq.slug = ANY(${p})
+      ) = (SELECT COUNT(DISTINCT kind) FROM tags WHERE slug = ANY(${p}))`;
+  }
+
+  if (forceStudied || truthyParam(req.query.only_studied)) {
+    filters += ` AND EXISTS (
+      SELECT 1 FROM question_vocab qvs
+      JOIN user_vocab_progress uvps ON uvps.vocab_id = qvs.vocab_id AND uvps.user_id = $1
+      WHERE qvs.question_id = q.id)`;
+  }
+
+  if (truthyParam(req.query.due_now)) {
+    filters += ` AND EXISTS (
+      SELECT 1 FROM question_vocab qvd
+      JOIN user_vocab_progress uvpd ON uvpd.vocab_id = qvd.vocab_id AND uvpd.user_id = $1
+      WHERE qvd.question_id = q.id AND uvpd.next_review_at <= now())`;
+  }
+
+  if (truthyParam(req.query.unanswered)) {
+    filters += ` AND NOT EXISTS (
+      SELECT 1 FROM user_question_attempts uaa
+      WHERE uaa.user_id = $1 AND uaa.question_id = q.id)`;
+  }
+
+  if (truthyParam(req.query.got_wrong)) {
+    // The LATEST attempt, not any attempt: a question since answered correctly
+    // is no longer one you got wrong.
+    filters += ` AND (
+      SELECT ual.is_correct FROM user_question_attempts ual
+      WHERE ual.user_id = $1 AND ual.question_id = q.id
+      ORDER BY ual.answered_at DESC, ual.id DESC LIMIT 1) IS FALSE`;
+  }
+
+  return { filters, vals };
+}
+
+// Ordering the reader can choose. Length is the only difficulty signal this
+// bank has, and it is a real one: the long items are the ones that take a 700
+// verbal to a 750.
+const QUESTION_ORDERS = {
+  sequence: 'q.external_id NULLS LAST, q.id',
+  shortest: 'q.word_count ASC NULLS LAST, q.external_id',
+  longest: 'q.word_count DESC NULLS LAST, q.external_id',
+  random: null // built below, because it needs the seed parameter
+};
+
+async function listQuestions(req, res, userId, forceStudied) {
+  try {
+    const order = String(req.query.order || 'sequence').toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(QUESTION_ORDERS, order)) {
+      return res.status(400).json({ error: 'Invalid order' });
+    }
+    const difficulty = String(req.query.difficulty || '').trim().toLowerCase();
+    if (difficulty && !['easy', 'hard'].includes(difficulty)) {
+      return res.status(400).json({ error: 'Invalid difficulty' });
+    }
+
+    const { filters, vals } = questionFilters(req, { forceStudied });
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 20, 1), QUESTION_LIMIT_MAX);
+    const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
+
+    const params = [userId, ...vals];
+
+    // A seeded hash, not ORDER BY random(). random() is re-evaluated per query,
+    // so paging through a shuffled list would show some questions twice and
+    // never reach others. Hashing a stable id with a seed gives one fixed
+    // shuffle: the client sends the same seed back for each page, and asks for
+    // a new seed when the reader wants a different order.
+    let seed = null;
+    let orderSql;
+    if (order === 'random') {
+      seed = String(req.query.seed || '').slice(0, 32) || Math.random().toString(36).slice(2, 10);
+      params.push(seed);
+      orderSql = `MD5(q.id::text || $${params.length})`;
+    } else {
+      orderSql = QUESTION_ORDERS[order];
+    }
+
+    params.push(limit, offset);
+    const limitParam = '$' + (params.length - 1);
+    const offsetParam = '$' + params.length;
+
+    const sql = `
+      SELECT q.id, q.external_id, q.prompt, q.question_type, q.options,
+             q.answer_key, q.explanation, q.difficulty, q.word_count,
+             qs.slug AS set_slug, qs.title AS set_title,
+             COUNT(*) OVER () AS total,
+             COALESCE(w.words, '[]') AS words,
+             a.selected_key AS last_selected_key,
+             a.is_correct   AS last_is_correct,
+             a.answered_at  AS last_answered_at
+      FROM questions q
+      JOIN question_sets qs ON qs.id = q.set_id
+      -- LATERAL rather than a follow-up query per question: the words this
+      -- question exercises, annotated with THIS user's progress on them.
+      LEFT JOIN LATERAL (
+        SELECT JSON_AGG(JSONB_BUILD_OBJECT(
+                 'id', v.id,
+                 'word', v.word,
+                 'role', qv.role,
+                 'surface_form', qv.surface_form,
+                 'meaning', v.meaning,
+                 'vietnamese_meaning', v.vietnamese_meaning,
+                 'studied', uvp.vocab_id IS NOT NULL,
+                 'repetition_level', uvp.repetition_level,
+                 'next_review_at', uvp.next_review_at,
+                 'due', uvp.next_review_at IS NOT NULL AND uvp.next_review_at <= now()
+               ) ORDER BY (qv.role <> 'target'), v.word) AS words
+        FROM question_vocab qv
+        JOIN vocabulary v ON v.id = qv.vocab_id
+        LEFT JOIN user_vocab_progress uvp ON uvp.vocab_id = v.id AND uvp.user_id = $1
+        WHERE qv.question_id = q.id
+      ) w ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT ua.selected_key, ua.is_correct, ua.answered_at
+        FROM user_question_attempts ua
+        WHERE ua.user_id = $1 AND ua.question_id = q.id
+        ORDER BY ua.answered_at DESC, ua.id DESC
+        LIMIT 1
+      ) a ON TRUE
+      WHERE TRUE${filters}
+      ORDER BY ${orderSql}
+      LIMIT ${limitParam} OFFSET ${offsetParam}
+    `;
+
+    const r = await pool.query(sql, params);
+    // COUNT(*) OVER () is evaluated before LIMIT, so it is the size of the
+    // whole filtered set, not of this page.
+    const total = r.rowCount > 0 ? Number.parseInt(r.rows[0].total, 10) : 0;
+    const questions = r.rows.map(({ total: _total, ...row }) => row);
+
+    // seed goes back so the caller can page through the same shuffle.
+    return res.json({ questions, total, limit, offset, order, seed });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+const PROGRESS_FILTERS = ['only_studied', 'due_now', 'got_wrong', 'unanswered'];
+
+// Browsing the bank is open to everyone; the progress filters are not, because
+// they ask about one specific person's history.
+app.get('/api/questions', async (req, res) => {
+  const userId = optionalUserId(req);
+  if (!userId && PROGRESS_FILTERS.some((key) => truthyParam(req.query[key]))) {
+    return res.status(401).json({ error: 'Sign in to filter by your own progress' });
+  }
+  return listQuestions(req, res, userId ? Number(userId) : null, false);
+});
+
+// The headline feature: only questions exercising a word this user has studied.
+app.get('/api/questions/studied', authenticateToken, async (req, res) =>
+  listQuestions(req, res, Number(req.auth.userId), true));
+
+app.post('/api/questions/attempt', authenticateToken, async (req, res) => {
+  const userId = Number(req.auth.userId);
+  const questionId = Number(req.body.question_id);
+  const selectedKey = req.body.selected_key == null
+    ? null
+    : String(req.body.selected_key).trim().toUpperCase();
+
+  if (!Number.isInteger(questionId)) {
+    return res.status(400).json({ error: 'Invalid question id' });
+  }
+  if (selectedKey !== null && !/^[A-Z]$/.test(selectedKey)) {
+    return res.status(400).json({ error: 'Invalid selected key' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const qr = await client.query(
+      'SELECT id, options, answer_key FROM questions WHERE id = $1 LIMIT 1',
+      [questionId]
+    );
+    if (qr.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Question not found' });
+    }
+    const question = qr.rows[0];
+    const isCorrect = selectedKey !== null && selectedKey === question.answer_key;
+
+    await client.query(
+      `INSERT INTO user_question_attempts (user_id, question_id, selected_key, is_correct)
+       VALUES ($1, $2, $3, $4)`,
+      [userId, questionId, selectedKey, isCorrect]
+    );
+
+    const links = (await client.query(
+      `SELECT qv.vocab_id, qv.role, qv.surface_form, v.word
+       FROM question_vocab qv JOIN vocabulary v ON v.id = qv.vocab_id
+       WHERE qv.question_id = $1`,
+      [questionId]
+    )).rows;
+
+    const updated = [];
+    for (const vocabId of scoredVocabIds(links, question.options, question.answer_key)) {
+      const progress = await applyQuestionResult(client, userId, vocabId, isCorrect);
+      // null = the user has never studied this word, so nothing was touched.
+      if (progress) {
+        const link = links.find((l) => Number(l.vocab_id) === vocabId);
+        updated.push({
+          vocab_id: vocabId,
+          word: link ? link.word : null,
+          previous_level: progress.previous_level,
+          new_level: progress.repetition_level,
+          next_review_at: progress.next_review_at
+        });
+      }
+    }
+
+    await client.query('COMMIT');
+    return res.json({
+      is_correct: isCorrect,
+      answer_key: question.answer_key,
+      updated_progress: updated
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
   } finally {
     client.release();
   }
