@@ -157,4 +157,6 @@ dump*.sql
 .neon
 
 PHASES.md
-ROADMAP.md
+
+# Local database dumps live here; never commit them.
+backups/

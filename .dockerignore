@@ -12,9 +12,9 @@ client/dist
 !**/.env.example
 
 client/client_old
-nginx.conf
-nginx-windows.conf
-ROADMAP.md
+nginx/
+docs/
+backups/
 a.cpp
 **/__pycache__
 **/*.pyc

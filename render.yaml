@@ -17,7 +17,10 @@ services:
   - type: web
     name: neurolex
     runtime: docker
-    dockerfilePath: ./Dockerfile
+    # Relative to the REPO ROOT, not to this file. The build context defaults to
+    # the repo root, which is what the Dockerfile expects (it copies client/ and
+    # server/), so dockerContext is deliberately left unset.
+    dockerfilePath: ./docker/Dockerfile
     plan: free
     region: singapore
     healthCheckPath: /api/health

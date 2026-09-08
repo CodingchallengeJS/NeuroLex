@@ -25,7 +25,10 @@ COPY server/ ./
 # index.js serves this directory when it exists.
 COPY --from=client-build /app/client/dist /app/client/dist
 
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# Paths are relative to the build CONTEXT, which is the repo root - not to this
+# file's directory. So the entrypoint is docker/docker-entrypoint.sh even though
+# it sits right next to this Dockerfile.
+COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 # Strip CR in case the file was checked out on Windows with CRLF endings,
 # which would otherwise make the shebang unusable inside Alpine.
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \

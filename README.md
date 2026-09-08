@@ -29,6 +29,23 @@ Một môi trường học tập từ vựng thông minh dựa trên kỹ thuậ
 - Docker + Docker Compose
 - Render Blueprint (`render.yaml`)
 
+## Cấu trúc thư mục
+
+```
+client/     React + Vite
+server/     Express API, migrations, seed, other-tools/
+docker/     Dockerfile, docker-compose.yml, docker-entrypoint.sh
+nginx/      cấu hình reverse proxy (tùy chọn, không dùng khi chạy Docker)
+docs/       ROADMAP.md, PHASES.md
+backups/    dump database ở máy bạn — không commit
+render.yaml Render Blueprint — Render mặc định tìm ở thư mục gốc
+neon.ts     cấu hình Neon CLI — CLI tìm ở thư mục gốc
+```
+
+> `package.json` / `package-lock.json` ở thư mục gốc **không phải** của app.
+> Chúng chỉ tồn tại để `neon.ts` import được `@neon/config`. Dependency thật của
+> dự án nằm trong `client/` và `server/`.
+
 ## Cài đặt
 
 Có 3 cách chạy dự án. **Docker là cách nhanh nhất** — không cần cài Postgres, không
@@ -46,7 +63,14 @@ cd EnVocabLearner
 Yêu cầu: Docker Desktop (đã bao gồm Docker Compose).
 
 ```bash
+cd docker
 docker compose up --build
+```
+
+Hoặc chạy thẳng từ thư mục gốc, không cần `cd`:
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
 ```
 
 Xong. Mở [http://localhost:8000](http://localhost:8000).
@@ -63,6 +87,8 @@ ghi trong bảng `schema_migrations`, seed thấy đã có sổ tay thì không 
 
 ### Các lệnh Docker hay dùng
 
+Chạy trong thư mục `docker/`:
+
 ```bash
 docker compose up --build      # build và chạy
 docker compose up -d           # chạy nền
@@ -73,8 +99,8 @@ docker compose down -v         # dừng và XOÁ SẠCH database
 
 ### Tùy chỉnh
 
-Mặc định dùng được ngay, nhưng bạn nên đặt secret thật. Tạo file `.env` ở
-thư mục gốc (cùng cấp với `docker-compose.yml`):
+Mặc định dùng được ngay, nhưng bạn nên đặt secret thật. Tạo file `docker/.env`
+(cùng cấp với `docker-compose.yml` — Compose đọc `.env` cạnh chính nó):
 
 ```env
 POSTGRES_DB=neurolex
@@ -170,7 +196,7 @@ dùng **Blueprint** thì Render mới dựng cả web service lẫn Postgres cù
 2. Trên Render: **New → Blueprint** → chọn repo này.
 3. Render đọc `render.yaml` và tạo:
    - Postgres `neurolex-db`
-   - Web service `neurolex` (build từ `Dockerfile`)
+   - Web service `neurolex` (build từ `docker/Dockerfile`)
    - `DATABASE_URL` được nối sẵn giữa hai bên
    - `AUTH_PEPPER` và `JWT_SECRET` được sinh ngẫu nhiên
 4. **Đặt `ADMIN_EMAIL` = email của bạn** khi Render hỏi. Tài khoản đăng ký bằng

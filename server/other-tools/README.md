@@ -71,7 +71,7 @@ Chỉ nạp `word` + `meanings`. Trường `example` để trống — dùng
 `backfill-magoosh-examples.js` để điền.
 
 > Tên sổ tay đang viết hoa sai (`Ielts` thay vì `IELTS`). Sẽ sửa ở P2 của
-> [ROADMAP.md](../../ROADMAP.md).
+> [ROADMAP.md](../../docs/ROADMAP.md).
 
 ### `backfill-magoosh-examples.js`
 

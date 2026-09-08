@@ -19,8 +19,11 @@ services:
 
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      # The context is the repo root, one level up: the Dockerfile copies
+      # client/ and server/, so it cannot be this directory. `dockerfile` is
+      # resolved relative to that context, hence the docker/ prefix.
+      context: ..
+      dockerfile: docker/Dockerfile
     restart: unless-stopped
     depends_on:
       db:
