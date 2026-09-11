@@ -4,6 +4,7 @@ import { fetchQuestions, submitQuestionAttempt, fetchTags } from '../api';
 import { AuthContext } from '../context/AuthContext';
 import SearchInput from '../components/SearchInput';
 import TagChip from '../components/TagChip';
+import GuestNotice from '../components/GuestNotice';
 
 const PAGE_SIZE = 50;
 
@@ -80,15 +81,6 @@ export default function QuestionsPage() {
   const [selectedKey, setSelectedKey] = useState(null);
   const [result, setResult] = useState(null);
 
-  // Progress filters ask about your own history, so they need an account.
-  useEffect(() => {
-    if (!user) {
-      setOnlyStudied(false);
-      setDueNow(false);
-      setStatus('all');
-    }
-  }, [user]);
-
   useEffect(() => {
     fetchTags('word').then(d => setTags((d.tags || []).filter(t => t.word_count > 0))).catch(() => {});
   }, []);
@@ -106,7 +98,8 @@ export default function QuestionsPage() {
     limit: PAGE_SIZE
   }), [query, selectedTags, notebookId, onlyStudied, dueNow, status, difficulty, order]);
 
-  // Filters changed: back to the first page and the first question.
+  // Filters changed: back to the first page and the first question. Signing in
+  // or out counts too, because it changes whose progress the filters read.
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -133,7 +126,7 @@ export default function QuestionsPage() {
         });
     }, 250); // debounce the search box
     return () => { alive = false; clearTimeout(timer); };
-  }, [filters, shuffleNonce]);
+  }, [filters, shuffleNonce, user]);
 
   const loadMore = useCallback(() => {
     if (questions.length >= total) return;
@@ -149,11 +142,11 @@ export default function QuestionsPage() {
   const answer = async (key) => {
     if (selectedKey || !current) return;
     setSelectedKey(key);
-    // Show the outcome immediately; the server call only records it.
+    // Show the outcome immediately; the call only records it (on the server,
+    // or in this browser for a guest).
     setResult({ is_correct: key === current.answer_key, updated_progress: null });
-    if (!user) return;
     try {
-      const data = await submitQuestionAttempt(current.id, key);
+      const data = await submitQuestionAttempt(current, key);
       setResult(data);
     } catch {
       // Keeping the local verdict is better than blanking the card.
@@ -187,6 +180,8 @@ export default function QuestionsPage() {
 
   return (
     <div className="questions-page">
+      <GuestNotice compact />
+
       <div className="questions-filters card">
         <div className="q-filter-row">
           <SearchInput
@@ -208,8 +203,7 @@ export default function QuestionsPage() {
                 key={s.key}
                 type="button"
                 className={`segmented-btn ${status === s.key ? 'active' : ''}`}
-                onClick={() => user && setStatus(s.key)}
-                disabled={!user && s.key !== 'all'}
+                onClick={() => setStatus(s.key)}
                 aria-pressed={status === s.key}
               >
                 {s.label}
@@ -223,7 +217,6 @@ export default function QuestionsPage() {
             <input
               type="checkbox"
               checked={onlyStudied}
-              disabled={!user}
               onChange={e => setOnlyStudied(e.target.checked)}
             />
             Chỉ câu chứa từ tôi đã học
@@ -232,12 +225,10 @@ export default function QuestionsPage() {
             <input
               type="checkbox"
               checked={dueNow}
-              disabled={!user}
               onChange={e => setDueNow(e.target.checked)}
             />
             Chỉ từ đến hạn ôn
           </label>
-          {!user && <span className="q-hint">Đăng nhập để lọc theo tiến độ của bạn</span>}
         </div>
 
         <div className="q-filter-row">

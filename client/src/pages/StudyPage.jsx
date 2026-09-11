@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchReviewSequence, submitReviewStep } from '../api';
+import GuestNotice from '../components/GuestNotice';
 
 export default function StudyPage() {
   const { notebookId } = useParams();
@@ -65,6 +66,8 @@ export default function StudyPage() {
         </button>
         <span className="text-soft">Tiến độ: {currentIndex + 1} / {vocabs.length}</span>
       </div>
+
+      <GuestNotice compact />
 
       <div className="card study-card" style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>{word.word}</h1>

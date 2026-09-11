@@ -17,7 +17,7 @@ import BulkTagModal from '../components/BulkTagModal';
 import { matchesTagSelection, countTagUsage } from '../lib/tagFilter';
 
 export default function NotebooksPage() {
-  const { user } = useContext(AuthContext);
+  const { user, openAuth } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -188,7 +188,7 @@ export default function NotebooksPage() {
                       {showingSearch ? `Kết quả cho "${globalQuery}"` : activeTitle}
                     </h2>
                     {inNotebook && (
-                      <button className="icon-btn" onClick={() => setShowAddVocabModal(true)} title="Thêm từ vựng">
+                      <button className="icon-btn" onClick={() => (user ? setShowAddVocabModal(true) : openAuth())} title="Thêm từ vựng">
                         <i className="fa-solid fa-plus"></i>
                       </button>
                     )}
@@ -202,7 +202,7 @@ export default function NotebooksPage() {
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <h2 className="section-title" style={{ margin: 0 }}>Sổ tay từ vựng</h2>
-                  <button className="icon-btn" onClick={() => setShowCreateModal(true)} title="Tạo sổ tay mới">
+                  <button className="icon-btn" onClick={() => (user ? setShowCreateModal(true) : openAuth())} title="Tạo sổ tay mới">
                     <i className="fa-solid fa-plus"></i>
                   </button>
                   {user?.isAdmin && (

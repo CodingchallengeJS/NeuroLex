@@ -7,6 +7,7 @@ export default function HomePage() {
         <h1 className="hero-title">IELTS Vocabularies Learner</h1>
         <p className="hero-subtitle">Mở rộng vốn từ vựng của bạn một cách thông minh và hiệu quả với hệ thống Spaced Repetition tiên tiến.</p>
         <Link to="/notebooks" className="btn-primary hero-btn">Bắt đầu học ngay</Link>
+        <p className="hero-note">Không cần tài khoản để bắt đầu · đăng nhập để lưu tiến độ và học trên mọi thiết bị</p>
       </div>
 
       <div className="features-grid">

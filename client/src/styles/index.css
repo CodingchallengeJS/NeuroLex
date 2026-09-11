@@ -1506,3 +1506,81 @@ p { font-size: 1rem; color: var(--text-soft); }
   .questions-card .quiz-options { grid-template-columns: 1fr; }
   .questions-card { padding: 1.25rem; }
 }
+
+/* ---------- Guest mode ---------- */
+/* Guests learn with progress saved in the browser; these are the prompts that
+   offer an account as the copy that follows them to other devices. */
+.guest-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  border: 1px dashed color-mix(in srgb, var(--primary) 45%, transparent);
+  text-align: left;
+}
+.guest-notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.guest-notice-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.guest-notice .btn-sm { align-self: flex-start; white-space: nowrap; }
+.guest-notice.compact {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 1.25rem;
+}
+.guest-notice.compact .btn-sm { align-self: center; }
+/* The questions page spaces its children with a flex gap already. */
+.questions-page > .guest-notice { margin: 0; }
+@media (max-width: 640px) {
+  .guest-notice.compact { flex-direction: column; align-items: stretch; }
+}
+
+.guest-merge-hint {
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.guest-merge-hint strong, .guest-merge-hint i { color: var(--primary); }
+
+.merge-toast {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 380px;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--success);
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+  font-size: 0.9rem;
+}
+.merge-toast > i { color: var(--success); }
+.merge-toast.is-error { border-left-color: var(--warning); }
+.merge-toast.is-error > i { color: var(--warning); }
+.merge-toast .icon-btn { font-size: 1rem; }
+
+.hero-note { margin-top: 1rem; color: var(--text-soft); font-size: 0.9rem; }

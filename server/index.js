@@ -35,6 +35,11 @@ const pool = createPool();
 // cross-origin request happens. CLIENT_ORIGIN narrows CORS when the frontend is
 // served separately (e.g. `npm run dev` on :5173).
 app.use(cors(process.env.CLIENT_ORIGIN ? { origin: process.env.CLIENT_ORIGIN } : {}));
+// A guest's progress lives in their browser and travels in the request body.
+// Someone who studied every word sends ~3000 rows, several times express.json's
+// 100kb default, so these two routes alone get a larger limit. They are
+// registered first: body-parser skips a body that has already been parsed.
+app.use(['/api/progress/import', '/api/questions/guest'], express.json({ limit: '2mb' }));
 app.use(express.json());
 
 // Behind Render's proxy the client IP arrives in X-Forwarded-For. Trust exactly
@@ -700,7 +705,9 @@ app.put('/api/notebooks/:id/tags', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/vocabs/count', authenticateToken, async (req, res) => {
+// Public: a count of the shared vocabulary, which the progress chart needs for a
+// guest as much as for a signed-in user.
+app.get('/api/vocabs/count', async (req, res) => {
   try {
     // Đếm trực tiếp trên bảng vocabulary để đảm bảo các từ là duy nhất
     const q = 'SELECT COUNT(id)::int AS total_global_words FROM vocabulary';
@@ -1231,6 +1238,18 @@ app.get('/api/quiz/generate', authenticateToken, async (req, res) => {
     const wordsRes = await pool.query(q, vals);
     const words = wordsRes.rows;
     
+    return sendQuiz(res, words);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Two questions per word (word -> meaning and meaning -> word), with distractors
+// drawn from the same notebooks. Shared by a signed-in user's quiz, whose words
+// come from their progress above, and a guest's, whose words the browser picked.
+async function sendQuiz(res, words) {
+  try {
     if (words.length === 0) {
       return res.json({ words: [], questions: [] });
     }
@@ -1338,14 +1357,43 @@ app.get('/api/quiz/generate', authenticateToken, async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       words,
       questions: shuffle(questions)
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// A guest's quiz. The browser already chose which words are due from its own
+// progress, so this only turns them into questions - the same questions and
+// distractors a signed-in user gets for those words.
+const QUIZ_MAX_WORDS = 10;
+
+app.post('/api/quiz/build', async (req, res) => {
+  const raw = Array.isArray((req.body || {}).vocab_ids) ? req.body.vocab_ids : [];
+  const ids = [...new Set(raw.map(Number).filter(Number.isSafeInteger))];
+  if (ids.length > QUIZ_MAX_WORDS) {
+    return res.status(400).json({ error: `At most ${QUIZ_MAX_WORDS} words per quiz` });
+  }
+  if (ids.length === 0) {
+    return res.json({ words: [], questions: [] });
+  }
+
+  try {
+    const r = await pool.query(
+      `SELECT ${vocabularySelectFields} FROM vocabulary v WHERE v.id = ANY($1::bigint[])`,
+      [ids]
+    );
+    // Keep the caller's order (soonest due first); unknown ids just drop out.
+    const byId = new Map(r.rows.map((w) => [Number(w.id), w]));
+    return sendQuiz(res, ids.map((id) => byId.get(id)).filter(Boolean));
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1538,12 +1586,14 @@ function scoredVocabIds(links, options, answerKey) {
   return [...ids];
 }
 
-// Shared by GET /api/questions and GET /api/questions/studied - same filters,
-// the studied route simply forces only_studied on and requires a login.
+// Shared by every question listing - the same filters whether the progress comes
+// from an account or from a guest's browser (see progressSource). The studied
+// route simply forces only_studied on and requires a login.
 function questionFilters(req, { forceStudied }) {
   const vals = [];
   let filters = '';
-  // $1 is always the caller, so extra params start at $2.
+  // $1 is always the progress source, so extra params start at $2. The
+  // progress filters read the my_progress / my_attempts CTEs it defines.
   const add = (value) => { vals.push(value); return '$' + (vals.length + 1); };
 
   const setSlug = String(req.query.set || '').trim();
@@ -1588,30 +1638,30 @@ function questionFilters(req, { forceStudied }) {
   if (forceStudied || truthyParam(req.query.only_studied)) {
     filters += ` AND EXISTS (
       SELECT 1 FROM question_vocab qvs
-      JOIN user_vocab_progress uvps ON uvps.vocab_id = qvs.vocab_id AND uvps.user_id = $1
+      JOIN my_progress uvps ON uvps.vocab_id = qvs.vocab_id
       WHERE qvs.question_id = q.id)`;
   }
 
   if (truthyParam(req.query.due_now)) {
     filters += ` AND EXISTS (
       SELECT 1 FROM question_vocab qvd
-      JOIN user_vocab_progress uvpd ON uvpd.vocab_id = qvd.vocab_id AND uvpd.user_id = $1
+      JOIN my_progress uvpd ON uvpd.vocab_id = qvd.vocab_id
       WHERE qvd.question_id = q.id AND uvpd.next_review_at <= now())`;
   }
 
   if (truthyParam(req.query.unanswered)) {
     filters += ` AND NOT EXISTS (
-      SELECT 1 FROM user_question_attempts uaa
-      WHERE uaa.user_id = $1 AND uaa.question_id = q.id)`;
+      SELECT 1 FROM my_attempts uaa
+      WHERE uaa.question_id = q.id)`;
   }
 
   if (truthyParam(req.query.got_wrong)) {
     // The LATEST attempt, not any attempt: a question since answered correctly
     // is no longer one you got wrong.
     filters += ` AND (
-      SELECT ual.is_correct FROM user_question_attempts ual
-      WHERE ual.user_id = $1 AND ual.question_id = q.id
-      ORDER BY ual.answered_at DESC, ual.id DESC LIMIT 1) IS FALSE`;
+      SELECT ual.is_correct FROM my_attempts ual
+      WHERE ual.question_id = q.id
+      ORDER BY ual.answered_at DESC, ual.seq DESC LIMIT 1) IS FALSE`;
   }
 
   return { filters, vals };
@@ -1627,7 +1677,82 @@ const QUESTION_ORDERS = {
   random: null // built below, because it needs the seed parameter
 };
 
-async function listQuestions(req, res, userId, forceStudied) {
+// Where a listing reads "your progress" from. A signed-in user's rows are in the
+// database; a guest sends theirs from the browser. Both become the same two
+// CTEs, so every filter and annotation is written once and $1 is the only
+// parameter that differs.
+function progressSource({ userId = null, guest = null }) {
+  if (guest) {
+    // MATERIALIZED: unpack the JSON once, not once per question that looks.
+    return {
+      param: JSON.stringify(guest),
+      ctes: `
+      WITH my_progress AS MATERIALIZED (
+        SELECT (e->>0)::bigint AS vocab_id,
+               (e->>1)::int AS repetition_level,
+               to_timestamp((e->>2)::double precision / 1000) AS next_review_at
+        FROM jsonb_array_elements($1::jsonb -> 'words') e
+      ),
+      my_attempts AS MATERIALIZED (
+        SELECT (e->>0)::bigint AS question_id,
+               e->>1 AS selected_key,
+               (e->>2)::boolean AS is_correct,
+               to_timestamp((e->>3)::double precision / 1000) AS answered_at,
+               0::bigint AS seq
+        FROM jsonb_array_elements($1::jsonb -> 'attempts') e
+      )`
+    };
+  }
+  // NOT MATERIALIZED: inlined, so the lookups keep using the per-user indexes.
+  // An anonymous caller passes NULL and both come back empty.
+  return {
+    param: userId,
+    ctes: `
+      WITH my_progress AS NOT MATERIALIZED (
+        SELECT vocab_id, repetition_level, next_review_at
+        FROM user_vocab_progress WHERE user_id = $1::bigint
+      ),
+      my_attempts AS NOT MATERIALIZED (
+        SELECT question_id, selected_key, is_correct, answered_at, id AS seq
+        FROM user_question_attempts WHERE user_id = $1::bigint
+      )`
+  };
+}
+
+const GUEST_MAX_ROWS = 20000;
+// JavaScript's own Date range; to_timestamp accepts all of it.
+const MAX_DATE_MS = 8.64e15;
+const clampMs = (ms) => Math.min(Math.max(ms, 0), MAX_DATE_MS);
+
+// Only the tuple shapes client/src/api/guest.js sends, clamped to what the
+// casts in progressSource accept. A malformed row is dropped rather than
+// failing the listing.
+function guestProgressFromBody(body) {
+  const words = [];
+  for (const row of (Array.isArray((body || {}).words) ? body.words : []).slice(0, GUEST_MAX_ROWS)) {
+    if (!Array.isArray(row)) continue;
+    const [vocabId, level, nextMs] = row;
+    if (!Number.isSafeInteger(vocabId) || !Number.isInteger(level) || !Number.isFinite(nextMs)) continue;
+    words.push([vocabId, Math.min(Math.max(level, -1000), 4), clampMs(nextMs)]);
+  }
+
+  const attempts = [];
+  for (const row of (Array.isArray((body || {}).attempts) ? body.attempts : []).slice(0, GUEST_MAX_ROWS)) {
+    if (!Array.isArray(row)) continue;
+    const [questionId, key, isCorrect, answeredMs] = row;
+    if (!Number.isSafeInteger(questionId) || !Number.isFinite(answeredMs)) continue;
+    attempts.push([
+      questionId,
+      typeof key === 'string' && /^[A-Z]$/.test(key) ? key : null,
+      isCorrect === true,
+      clampMs(answeredMs)
+    ]);
+  }
+
+  return { words, attempts };
+}
+
+async function listQuestions(req, res, source, forceStudied) {
   try {
     const order = String(req.query.order || 'sequence').toLowerCase();
     if (!Object.prototype.hasOwnProperty.call(QUESTION_ORDERS, order)) {
@@ -1642,7 +1767,7 @@ async function listQuestions(req, res, userId, forceStudied) {
     const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 20, 1), QUESTION_LIMIT_MAX);
     const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
 
-    const params = [userId, ...vals];
+    const params = [source.param, ...vals];
 
     // A seeded hash, not ORDER BY random(). random() is re-evaluated per query,
     // so paging through a shuffled list would show some questions twice and
@@ -1663,7 +1788,7 @@ async function listQuestions(req, res, userId, forceStudied) {
     const limitParam = '$' + (params.length - 1);
     const offsetParam = '$' + params.length;
 
-    const sql = `
+    const sql = `${source.ctes}
       SELECT q.id, q.external_id, q.prompt, q.question_type, q.options,
              q.answer_key, q.explanation, q.difficulty, q.word_count,
              qs.slug AS set_slug, qs.title AS set_title,
@@ -1691,14 +1816,14 @@ async function listQuestions(req, res, userId, forceStudied) {
                ) ORDER BY (qv.role <> 'target'), v.word) AS words
         FROM question_vocab qv
         JOIN vocabulary v ON v.id = qv.vocab_id
-        LEFT JOIN user_vocab_progress uvp ON uvp.vocab_id = v.id AND uvp.user_id = $1
+        LEFT JOIN my_progress uvp ON uvp.vocab_id = v.id
         WHERE qv.question_id = q.id
       ) w ON TRUE
       LEFT JOIN LATERAL (
         SELECT ua.selected_key, ua.is_correct, ua.answered_at
-        FROM user_question_attempts ua
-        WHERE ua.user_id = $1 AND ua.question_id = q.id
-        ORDER BY ua.answered_at DESC, ua.id DESC
+        FROM my_attempts ua
+        WHERE ua.question_id = q.id
+        ORDER BY ua.answered_at DESC, ua.seq DESC
         LIMIT 1
       ) a ON TRUE
       WHERE TRUE${filters}
@@ -1722,19 +1847,24 @@ async function listQuestions(req, res, userId, forceStudied) {
 
 const PROGRESS_FILTERS = ['only_studied', 'due_now', 'got_wrong', 'unanswered'];
 
-// Browsing the bank is open to everyone; the progress filters are not, because
-// they ask about one specific person's history.
+// Browsing the bank is open to everyone. The progress filters need someone's
+// progress: a signed-in user's here, or a guest's through /api/questions/guest.
 app.get('/api/questions', async (req, res) => {
   const userId = optionalUserId(req);
   if (!userId && PROGRESS_FILTERS.some((key) => truthyParam(req.query[key]))) {
     return res.status(401).json({ error: 'Sign in to filter by your own progress' });
   }
-  return listQuestions(req, res, userId ? Number(userId) : null, false);
+  return listQuestions(req, res, progressSource({ userId: userId ? Number(userId) : null }), false);
 });
 
 // The headline feature: only questions exercising a word this user has studied.
 app.get('/api/questions/studied', authenticateToken, async (req, res) =>
-  listQuestions(req, res, Number(req.auth.userId), true));
+  listQuestions(req, res, progressSource({ userId: Number(req.auth.userId) }), true));
+
+// A guest's listing: the same filters in the query string, their browser
+// progress in the body. Nothing is written, so no account is needed.
+app.post('/api/questions/guest', async (req, res) =>
+  listQuestions(req, res, progressSource({ guest: guestProgressFromBody(req.body) }), false));
 
 app.post('/api/questions/attempt', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
@@ -1803,6 +1933,203 @@ app.post('/api/questions/attempt', authenticateToken, async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- GUEST PROGRESS MERGE ---------- */
+
+// What a guest studied in the browser, merged into the account they just signed
+// in to. The rule is the one other-tools/sync-user-progress.js uses: best level
+// and furthest next review win, so signing in never leaves a word less learned
+// than either copy had it. Sending the same payload twice changes nothing,
+// which is what makes the client's retry after a failed merge safe.
+const IMPORT_MAX_WORDS = 20000;
+const IMPORT_MAX_NOTEBOOKS = 2000;
+const IMPORT_MAX_ATTEMPTS = 20000;
+
+// A browser copy is only as trustworthy as whatever last edited localStorage,
+// so impossible values are dropped instead of stored.
+function importDate(value, maxAheadDays) {
+  if (value == null || value === '') return null;
+  const ms = new Date(value).getTime();
+  if (!Number.isFinite(ms)) return null;
+  if (ms < Date.UTC(2000, 0, 1) || ms > Date.now() + maxAheadDays * 24 * 3600 * 1000) return null;
+  return new Date(ms);
+}
+
+const clampInt = (value, min, max) =>
+  (Number.isInteger(value) ? Math.min(Math.max(value, min), max) : null);
+
+function importedWords(raw) {
+  const byId = new Map(); // one row per word: ON CONFLICT cannot touch a row twice
+  for (const w of (Array.isArray(raw) ? raw : []).slice(0, IMPORT_MAX_WORDS)) {
+    const vocabId = Number((w || {}).vocab_id);
+    const level = clampInt((w || {}).repetition_level, -1000, 4);
+    // The longest real interval is 30 days; 400 leaves room for clock skew.
+    const next = importDate((w || {}).next_review_at, 400);
+    if (!Number.isSafeInteger(vocabId) || level === null || !next) continue;
+    byId.set(vocabId, {
+      vocab_id: vocabId,
+      repetition_level: level,
+      // Derived, not trusted: the interval always follows the level.
+      interval_days: getIntervalDaysForLevel(level),
+      next_review_at: next,
+      last_reviewed_at: importDate(w.last_reviewed_at, 1),
+      correct_streak: clampInt(w.correct_streak, 0, 1000000) ?? 0,
+      total_reviews: clampInt(w.total_reviews, 0, 1000000) ?? 0,
+      created_at: importDate(w.created_at, 1)
+    });
+  }
+  return [...byId.values()];
+}
+
+function importedNotebooks(raw) {
+  const byId = new Map();
+  for (const n of (Array.isArray(raw) ? raw : []).slice(0, IMPORT_MAX_NOTEBOOKS)) {
+    const notebookId = Number((n || {}).notebook_id);
+    const wordId = Number((n || {}).current_word_id);
+    if (Number.isSafeInteger(notebookId) && Number.isSafeInteger(wordId)) byId.set(notebookId, wordId);
+  }
+  return [...byId.entries()];
+}
+
+function importedAttempts(raw) {
+  const attempts = [];
+  for (const a of (Array.isArray(raw) ? raw : []).slice(0, IMPORT_MAX_ATTEMPTS)) {
+    const questionId = Number((a || {}).question_id);
+    const key = typeof (a || {}).selected_key === 'string' ? a.selected_key.trim().toUpperCase() : null;
+    const answeredAt = importDate((a || {}).answered_at, 1);
+    if (!Number.isSafeInteger(questionId) || !answeredAt) continue;
+    attempts.push({
+      question_id: questionId,
+      selected_key: key && /^[A-Z]$/.test(key) ? key : null,
+      answered_at: answeredAt
+    });
+  }
+  return attempts;
+}
+
+app.post('/api/progress/import', authenticateToken, async (req, res) => {
+  const userId = Number(req.auth.userId);
+  const body = req.body || {};
+  const words = importedWords(body.words);
+  const notebooks = importedNotebooks(body.notebooks);
+  const attempts = importedAttempts(body.attempts);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // JOIN vocabulary drops ids that no longer exist instead of failing the
+    // whole merge on the foreign key.
+    const wordsResult = words.length === 0 ? { rowCount: 0 } : await client.query(`
+      INSERT INTO user_vocab_progress
+        (user_id, vocab_id, repetition_level, interval_days, next_review_at,
+         last_reviewed_at, correct_streak, total_reviews, mastered, created_at, updated_at)
+      SELECT $1::bigint, v.id, i.repetition_level, i.interval_days, i.next_review_at,
+             i.last_reviewed_at, i.correct_streak, i.total_reviews,
+             i.repetition_level >= 4, COALESCE(i.created_at, NOW()), NOW()
+      FROM UNNEST($2::bigint[], $3::int[], $4::int[], $5::timestamp[], $6::timestamp[],
+                  $7::int[], $8::int[], $9::timestamp[])
+        AS i(vocab_id, repetition_level, interval_days, next_review_at, last_reviewed_at,
+             correct_streak, total_reviews, created_at)
+      JOIN vocabulary v ON v.id = i.vocab_id
+      ON CONFLICT (user_id, vocab_id) DO UPDATE SET
+        repetition_level = GREATEST(user_vocab_progress.repetition_level, EXCLUDED.repetition_level),
+        next_review_at   = GREATEST(user_vocab_progress.next_review_at, EXCLUDED.next_review_at),
+        interval_days    = CASE
+                             WHEN EXCLUDED.repetition_level >= user_vocab_progress.repetition_level
+                             THEN EXCLUDED.interval_days
+                             ELSE user_vocab_progress.interval_days
+                           END,
+        last_reviewed_at = GREATEST(user_vocab_progress.last_reviewed_at, EXCLUDED.last_reviewed_at),
+        correct_streak   = GREATEST(user_vocab_progress.correct_streak, EXCLUDED.correct_streak),
+        total_reviews    = GREATEST(user_vocab_progress.total_reviews, EXCLUDED.total_reviews),
+        mastered         = GREATEST(user_vocab_progress.repetition_level, EXCLUDED.repetition_level) >= 4,
+        created_at       = LEAST(user_vocab_progress.created_at, EXCLUDED.created_at),
+        updated_at       = NOW()
+      RETURNING vocab_id`,
+      [
+        userId,
+        words.map((w) => w.vocab_id),
+        words.map((w) => w.repetition_level),
+        words.map((w) => w.interval_days),
+        words.map((w) => w.next_review_at),
+        words.map((w) => w.last_reviewed_at),
+        words.map((w) => w.correct_streak),
+        words.map((w) => w.total_reviews),
+        words.map((w) => w.created_at)
+      ]
+    );
+
+    // Study position: keep whichever is further into the notebook, counted in
+    // the order the study page walks it. The word must belong to the notebook,
+    // and the notebook must be one this user can see.
+    const notebooksResult = notebooks.length === 0 ? { rowCount: 0 } : await client.query(`
+      WITH incoming AS (
+        SELECT * FROM UNNEST($2::bigint[], $3::bigint[]) AS t(notebook_id, current_word_id)
+      ),
+      ranked AS (
+        SELECT nv.notebook_id, nv.vocab_id,
+               ROW_NUMBER() OVER (PARTITION BY nv.notebook_id
+                                  ORDER BY nv.sort_order NULLS LAST, v.word, v.id) AS rn
+        FROM notebook_vocab nv
+        JOIN vocabulary v ON v.id = nv.vocab_id
+        WHERE nv.notebook_id IN (SELECT notebook_id FROM incoming)
+      )
+      INSERT INTO user_notebook_progress (user_id, notebook_id, current_word_id)
+      SELECT $1::bigint, i.notebook_id, i.current_word_id
+      FROM incoming i
+      JOIN notebooks n
+        ON n.id = i.notebook_id AND (n.owner_user_id IS NULL OR n.owner_user_id = $1::bigint)
+      JOIN ranked incoming_rank
+        ON incoming_rank.notebook_id = i.notebook_id AND incoming_rank.vocab_id = i.current_word_id
+      LEFT JOIN user_notebook_progress cur
+        ON cur.user_id = $1::bigint AND cur.notebook_id = i.notebook_id
+      LEFT JOIN ranked current_rank
+        ON current_rank.notebook_id = cur.notebook_id AND current_rank.vocab_id = cur.current_word_id
+      WHERE current_rank.rn IS NULL OR incoming_rank.rn > current_rank.rn
+      ON CONFLICT (user_id, notebook_id) DO UPDATE SET current_word_id = EXCLUDED.current_word_id
+      RETURNING notebook_id`,
+      [userId, notebooks.map(([notebookId]) => notebookId), notebooks.map(([, wordId]) => wordId)]
+    );
+
+    // is_correct is graded again from the answer key rather than taken from the
+    // browser, and NOT EXISTS lets a retried merge skip what it already wrote.
+    const attemptsResult = attempts.length === 0 ? { rowCount: 0 } : await client.query(`
+      INSERT INTO user_question_attempts (user_id, question_id, selected_key, is_correct, answered_at)
+      SELECT $1::bigint, q.id, i.selected_key,
+             i.selected_key IS NOT NULL AND i.selected_key = q.answer_key,
+             i.answered_at
+      FROM UNNEST($2::bigint[], $3::text[], $4::timestamp[]) AS i(question_id, selected_key, answered_at)
+      JOIN questions q ON q.id = i.question_id
+      WHERE NOT EXISTS (
+        SELECT 1 FROM user_question_attempts x
+        WHERE x.user_id = $1::bigint AND x.question_id = i.question_id AND x.answered_at = i.answered_at)
+      RETURNING id`,
+      [
+        userId,
+        attempts.map((a) => a.question_id),
+        attempts.map((a) => a.selected_key),
+        attempts.map((a) => a.answered_at)
+      ]
+    );
+
+    await client.query('COMMIT');
+    return res.json({
+      imported: {
+        words: wordsResult.rowCount,
+        notebooks: notebooksResult.rowCount,
+        attempts: attemptsResult.rowCount
+      },
+      received: { words: words.length, notebooks: notebooks.length, attempts: attempts.length }
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Progress import error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   } finally {
     client.release();

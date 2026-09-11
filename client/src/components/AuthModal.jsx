@@ -1,8 +1,10 @@
 import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useGuestProgress, guestWordCount } from '../lib/guestStore';
 
 export default function AuthModal({ onClose }) {
   const { login, register } = useContext(AuthContext);
+  const guestWords = guestWordCount(useGuestProgress());
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -40,28 +42,35 @@ export default function AuthModal({ onClose }) {
         </div>
         <form onSubmit={handleSubmit} className="modal-body">
           {error && <div className="error-alert">{error}</div>}
-          
+
+          {guestWords > 0 && (
+            <div className="guest-merge-hint">
+              <i className="fa-solid fa-cloud-arrow-up"></i> <strong>{guestWords} từ</strong> bạn đã học trên trình duyệt
+              này sẽ được lưu vào tài khoản ngay khi {isLogin ? 'đăng nhập' : 'đăng ký'}.
+            </div>
+          )}
+
           {!isLogin && (
             <div className="form-group">
               <label>Tên đăng nhập</label>
               <input type="text" value={username} onChange={e => setUsername(e.target.value)} required />
             </div>
           )}
-          
+
           <div className="form-group">
             <label>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
-          
+
           <div className="form-group">
             <label>Mật khẩu</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} />
           </div>
-          
+
           <button type="submit" className="btn-primary block w-100" disabled={loading}>
             {loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập' : 'Đăng ký')}
           </button>
-          
+
           <p className="auth-switch">
             {isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}
             <button type="button" className="link-btn" onClick={() => setIsLogin(!isLogin)}>

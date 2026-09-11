@@ -1,13 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { generateQuiz, submitQuiz } from '../api';
+import { AuthContext } from '../context/AuthContext';
 import QuizQuestion from '../components/QuizQuestion';
+import GuestNotice from '../components/GuestNotice';
 
 export default function QuizPage() {
   const { bucket } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const { user } = useContext(AuthContext);
+
   const searchParams = new URLSearchParams(location.search);
   const notebookId = searchParams.get('notebook_id');
 
@@ -16,7 +19,7 @@ export default function QuizPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
-  
+
   const [correctCounts, setCorrectCounts] = useState({});
   const [quizFinished, setQuizFinished] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -25,7 +28,7 @@ export default function QuizPage() {
     generateQuiz(bucket, notebookId).then(data => {
       // 1. Map data.words theo từ vựng (chữ tiếng Anh) thay vì ID
       const wordsMap = {};
-      (data.words || []).forEach(w => { 
+      (data.words || []).forEach(w => {
         wordsMap[w.word] = w; // Dùng w.word làm chìa khóa
       });
 
@@ -36,7 +39,7 @@ export default function QuizPage() {
           // Lấy đúng từ tiếng Anh dựa theo type của câu hỏi
           const optionWord = q.type === 'meaning_to_word' ? opt.text : opt.word;
           const wordDetail = wordsMap[optionWord] || {};
-          
+
           return {
             ...opt,
             example: opt.example || wordDetail.example,
@@ -105,7 +108,7 @@ export default function QuizPage() {
   if (quizFinished) {
     const totalWords = Object.keys(correctCounts).length;
     const masteredThisSession = Object.values(correctCounts).filter(c => c === 2).length;
-    
+
     return (
       <div className="quiz-container card text-center">
         <h2>Ôn tập hoàn tất!</h2>
@@ -116,10 +119,13 @@ export default function QuizPage() {
           <p>Số từ sai (học lại): <strong>{Object.values(correctCounts).filter(c => c === 0).length}</strong></p>
         </div>
         {submitSuccess ? (
-          <p className="text-success mt-3"><i className="fa-solid fa-check"></i> Đã lưu kết quả</p>
+          <p className="text-success mt-3">
+            <i className="fa-solid fa-check"></i> {user ? 'Đã lưu kết quả' : 'Đã lưu kết quả trên trình duyệt này'}
+          </p>
         ) : (
           <p className="text-warning mt-3">Đang lưu kết quả...</p>
         )}
+        <GuestNotice />
         <button className="btn-primary mt-4" onClick={() => navigate('/notebooks')}>Tiếp tục học</button>
       </div>
     );
@@ -135,12 +141,12 @@ export default function QuizPage() {
       <div className="quiz-header">
         <span>Câu {currentIndex + 1} / {questions.length}</span>
       </div>
-      
-      <QuizQuestion 
-        question={q} 
-        onAnswer={handleAnswer} 
-        showResult={showResult} 
-        selectedKey={selectedKey} 
+
+      <QuizQuestion
+        question={q}
+        onAnswer={handleAnswer}
+        showResult={showResult}
+        selectedKey={selectedKey}
       />
 
       {showResult && (

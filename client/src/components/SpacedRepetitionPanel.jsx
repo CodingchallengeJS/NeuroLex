@@ -2,11 +2,14 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchNotebooks, fetchRepetitionSummary, splitChunk } from '../api';
 import { AuthContext } from '../context/AuthContext';
+import { useGuestProgress } from '../lib/guestStore';
 import VocabularyProgressChart from './VocabProgressChart'
+import GuestNotice from './GuestNotice';
 //import { PieChart, PieSlice, PieCenter } from "@bklitui/ui/charts";
 
 export default function SpacedRepetitionPanel({ selected_notebook, all_vocab_count }) {
-  const { user } = useContext(AuthContext);
+  const { user, loading, openAuth } = useContext(AuthContext);
+  const guestState = useGuestProgress();
   const navigate = useNavigate();
   const [notebooks, setNotebooks] = useState([]);
   const [selectedNb, setSelectedNb] = useState(selected_notebook || '');
@@ -19,11 +22,17 @@ export default function SpacedRepetitionPanel({ selected_notebook, all_vocab_cou
     }
   }, [user]);
 
+  // A guest's counts come from the browser, so they also refresh when that
+  // progress changes (e.g. another tab finishing a quiz).
+  const guestVersion = user ? null : guestState;
   useEffect(() => {
-    if (user) {
-      fetchRepetitionSummary(selectedNb || null).then(setSummary);
-    }
-  }, [user, selectedNb]);
+    if (loading) return undefined;
+    let alive = true;
+    fetchRepetitionSummary(selectedNb || null)
+      .then(data => { if (alive) setSummary(data); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [user, loading, selectedNb, guestVersion]);
 
   useEffect(() => {
     if (selected_notebook != selectedNb) {
@@ -36,15 +45,6 @@ export default function SpacedRepetitionPanel({ selected_notebook, all_vocab_cou
       setAllVocabCount(all_vocab_count);
     }
   }, [all_vocab_count]);
-
-  if (!user) {
-    return (
-      <div className="sr-panel card">
-        <h3 className="sr-title"><i className="fa-solid fa-brain"></i> Spaced Repetition</h3>
-        <p>Vui lòng đăng nhập để sử dụng tính năng ôn tập.</p>
-      </div>
-    );
-  }
 
   const handleStartReview = (bucket) => {
     let url = `/quiz/${bucket}`;
@@ -59,7 +59,7 @@ export default function SpacedRepetitionPanel({ selected_notebook, all_vocab_cou
   return (
     <div className="sr-panel card">
       <h3 className="sr-title"><i className="fa-solid fa-brain"></i> Spaced Repetition</h3>
-      
+
       {/* <div className="sr-filter">
         <select value={selectedNb} onChange={e => setSelectedNb(e.target.value)} className="form-select">
           <option value="">Tất cả sổ tay</option>
@@ -114,18 +114,24 @@ export default function SpacedRepetitionPanel({ selected_notebook, all_vocab_cou
         </div>
       </div> */}
 
-      <button 
-        className="btn-primary w-100 mt-3" 
+      <button
+        className="btn-primary w-100 mt-3"
         disabled={dueNow === 0}
         onClick={() => handleStartReview('due_now')}
       >
         <i className="fa-solid fa-play"></i> Ôn tập hôm nay ({dueNow})
       </button>
 
-      <button 
-        className="btn-outline w-100 mt-2" 
+      {/* A Chunk is a notebook saved on the server, so it needs an account. */}
+      <button
+        className="btn-outline w-100 mt-2"
         disabled={dueNow === 0}
+        title={user ? undefined : 'Đăng nhập để tạo Chunk'}
         onClick={async () => {
+          if (!user) {
+            openAuth();
+            return;
+          }
           try {
             const res = await splitChunk();
             const data = await fetchNotebooks();
@@ -139,6 +145,8 @@ export default function SpacedRepetitionPanel({ selected_notebook, all_vocab_cou
       >
         <i className="fa-solid fa-cut"></i> Cắt 30 từ (Tạo Chunk)
       </button>
+
+      <GuestNotice />
     </div>
   );
 }

@@ -1,33 +1,40 @@
-// Same-origin by default: in the Docker/Render image Express serves this build
-// and the API from one host, so a relative path works over both http and https.
-// For `npm run dev` against a separately running backend, set VITE_API_BASE in
-// client/.env (e.g. VITE_API_BASE=http://localhost:8000/api).
-const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+import { apiFetch, getToken } from './http.js';
+import * as guest from './guest.js';
 
-export async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem('evl_access_token');
-  const headers = { 'Content-Type': 'application/json', ...options.headers };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Request failed');
-  return data;
-}
+export { apiFetch };
+export { mergeGuestProgress } from './guest.js';
+
+// Progress calls go to the server for a signed-in user. A guest's are answered
+// from this browser by ./guest.js, in the same response shape, so pages call
+// these without caring which one they are talking to.
+const signedIn = () => Boolean(getToken());
 
 export const login = (email, password) => apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
 export const register = (username, email, password) => apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ username, email, password }) });
 export const fetchMe = () => apiFetch('/auth/me');
 export const fetchVocabCount = () => apiFetch('/vocabs/count');
 export const fetchNotebooks = () => apiFetch('/notebooks');
-export const fetchNotebookVocabs = (notebookId) => apiFetch(`/notebooks/${notebookId}/vocabs`);
-export const fetchRepetitionSummary = (notebookId) => apiFetch(notebookId ? `/repetition/summary?notebook_id=${notebookId}` : '/repetition/summary');
+export const fetchNotebookVocabs = (notebookId) => (signedIn()
+  ? apiFetch(`/notebooks/${notebookId}/vocabs`)
+  : guest.guestNotebookVocabs(notebookId));
+export const fetchRepetitionSummary = (notebookId) => (signedIn()
+  ? apiFetch(notebookId ? `/repetition/summary?notebook_id=${notebookId}` : '/repetition/summary')
+  : guest.guestRepetitionSummary(notebookId));
 export const fetchRepetitionItems = (bucket, notebookId) => apiFetch(`/repetition/items?bucket=${bucket}${notebookId ? `&notebook_id=${notebookId}` : ''}`);
-export const generateQuiz = (bucket, notebookId) => apiFetch(`/quiz/generate?bucket=${bucket}${notebookId ? `&notebook_id=${notebookId}` : ''}`);
-export const submitQuiz = (results) => apiFetch('/quiz/submit', { method: 'POST', body: JSON.stringify({ results }) });
+export const generateQuiz = (bucket, notebookId) => (signedIn()
+  ? apiFetch(`/quiz/generate?bucket=${bucket}${notebookId ? `&notebook_id=${notebookId}` : ''}`)
+  : guest.guestGenerateQuiz(bucket, notebookId));
+export const submitQuiz = (results) => (signedIn()
+  ? apiFetch('/quiz/submit', { method: 'POST', body: JSON.stringify({ results }) })
+  : guest.guestSubmitQuiz(results));
 export const searchVocab = (query, notebookId) => apiFetch(`/search?q=${encodeURIComponent(query)}${notebookId ? `&notebook_id=${notebookId}` : ''}`);
 export const splitChunk = () => apiFetch('/repetition/split-chunk', { method: 'POST' });
-export const fetchReviewSequence = (notebookId) => apiFetch(`/notebooks/${notebookId}/review-sequence`);
-export const submitReviewStep = (notebookId, vocabId, correctCount) => apiFetch(`/notebooks/${notebookId}/review-step`, { method: 'POST', body: JSON.stringify({ vocab_id: vocabId, correct_count: correctCount }) });
+export const fetchReviewSequence = (notebookId) => (signedIn()
+  ? apiFetch(`/notebooks/${notebookId}/review-sequence`)
+  : guest.guestReviewSequence(notebookId));
+export const submitReviewStep = (notebookId, vocabId, correctCount) => (signedIn()
+  ? apiFetch(`/notebooks/${notebookId}/review-step`, { method: 'POST', body: JSON.stringify({ vocab_id: vocabId, correct_count: correctCount }) })
+  : guest.guestReviewStep(notebookId, vocabId, correctCount));
 export const createNotebook = (data) => apiFetch('/notebooks', { method: 'POST', body: JSON.stringify(data) });
 export const addVocabToNotebook = (notebookId, data) => apiFetch(`/notebooks/${notebookId}/vocabs`, { method: 'POST', body: JSON.stringify(data) });
 export const updateVocab = (vocabId, data) => apiFetch(`/vocabs/${vocabId}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -49,8 +56,9 @@ export const fetchNotebooksFiltered = ({ tags = [], q = '' } = {}) => {
 };
 
 // --- Question bank ---
-// only_studied has its own endpoint: it is the feature the bank exists for, and
-// unlike the rest of the filters it cannot be answered without a login.
+// only_studied has its own endpoint for a signed-in user: it is the feature the
+// bank exists for. A guest's progress is in the browser, so it travels in the
+// body of /questions/guest and only_studied is just another filter there.
 export const fetchQuestions = ({ tags = [], only_studied = false, ...rest } = {}) => {
   const params = new URLSearchParams();
   tags.forEach((t) => params.append('tag', t));
@@ -58,11 +66,25 @@ export const fetchQuestions = ({ tags = [], only_studied = false, ...rest } = {}
     if (value === undefined || value === null || value === '' || value === false) return;
     params.set(key, value === true ? '1' : String(value));
   });
+
+  if (!signedIn()) {
+    if (only_studied) params.set('only_studied', '1');
+    const qs = params.toString();
+    return apiFetch(qs ? `/questions/guest?${qs}` : '/questions/guest', {
+      method: 'POST',
+      body: JSON.stringify(guest.guestQuestionProgress())
+    });
+  }
+
   const qs = params.toString();
   const base = only_studied ? '/questions/studied' : '/questions';
   return apiFetch(qs ? `${base}?${qs}` : base);
 };
-export const submitQuestionAttempt = (questionId, selectedKey) => apiFetch('/questions/attempt', { method: 'POST', body: JSON.stringify({ question_id: questionId, selected_key: selectedKey }) });
+// Takes the whole question: a guest's answer is graded from its answer key and
+// word links without a round trip.
+export const submitQuestionAttempt = (question, selectedKey) => (signedIn()
+  ? apiFetch('/questions/attempt', { method: 'POST', body: JSON.stringify({ question_id: question.id, selected_key: selectedKey }) })
+  : guest.guestQuestionAttempt(question, selectedKey));
 
 // --- Word tags ---
 export const fetchVocabTags = (vocabId) => apiFetch(`/vocabs/${vocabId}/tags`);
