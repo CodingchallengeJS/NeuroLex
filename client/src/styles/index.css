@@ -1584,3 +1584,136 @@ p { font-size: 1rem; color: var(--text-soft); }
 .merge-toast .icon-btn { font-size: 1rem; }
 
 .hero-note { margin-top: 1rem; color: var(--text-soft); font-size: 0.9rem; }
+
+/* ---------- About + Donate ---------- */
+.info-page {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.info-hero { text-align: center; padding: 1rem 0 0.5rem; }
+/* Fredoka has no Vietnamese diacritics: "Ủng hộ" would fall back to a serif
+   font mid-word. The home title is English, so only these titles switch. */
+.info-hero .hero-title { font-family: 'Lexend', sans-serif; font-size: 3rem; font-weight: 700; }
+.info-hero .hero-subtitle { margin-bottom: 0; }
+
+.info-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+}
+.info-section h2 i { color: var(--primary); }
+.info-section p { margin: 0 0 0.75rem; color: var(--text-soft); line-height: 1.7; }
+.info-section p:last-child { margin-bottom: 0; }
+.info-footnote { margin-top: 1rem !important; font-size: 0.9rem; }
+.info-link { color: var(--primary); text-decoration: underline; }
+
+.info-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+.info-stat {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  text-align: center;
+}
+.info-stat strong { display: block; font-size: 1.8rem; color: var(--primary); }
+.info-stat span { color: var(--text-soft); font-size: 0.85rem; }
+
+.info-steps {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.info-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+.info-steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  flex: 0 0 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--primary);
+  font-weight: 700;
+}
+.info-steps strong { color: var(--text); }
+
+/* Wide on a phone, so it scrolls inside itself instead of the page. */
+.srs-ladder { overflow-x: auto; }
+.srs-ladder table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 0.9rem; }
+.srs-ladder th, .srs-ladder td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.srs-ladder th {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.srs-ladder td:first-child { color: var(--primary); font-weight: 600; white-space: nowrap; }
+
+.info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.info-actions a { display: inline-flex; align-items: center; gap: 0.5rem; }
+
+.donate-card {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  align-items: center;
+  gap: 2rem;
+}
+/* Always on white: banking apps read a dark-on-light QR far more reliably, and
+   the page itself is dark by default. */
+.donate-qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+.donate-qr img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); }
+.donate-qr.is-empty {
+  flex-direction: column;
+  gap: 0.5rem;
+  aspect-ratio: 1 / 1;
+  border: 1px dashed var(--line);
+  background: var(--surface-soft);
+  color: var(--text-soft);
+  text-align: center;
+}
+.donate-qr.is-empty i { font-size: 3rem; opacity: 0.6; }
+.donate-note { font-size: 0.85rem; }
+.donate-download { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+.donate-btn:hover { color: #ff5d8f; }
+
+@media (max-width: 720px) {
+  .info-hero .hero-title { font-size: 2.2rem; }
+  .donate-card { grid-template-columns: 1fr; }
+  .donate-qr { width: 100%; max-width: 300px; margin: 0 auto; }
+}

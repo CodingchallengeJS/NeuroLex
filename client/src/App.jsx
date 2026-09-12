@@ -7,6 +7,8 @@ import NotebooksPage from './pages/NotebooksPage.jsx';
 import QuizPage from './pages/QuizPage.jsx';
 import QuestionsPage from './pages/QuestionsPage.jsx';
 import StudyPage from './pages/StudyPage.jsx';
+import AboutPage from './pages/AboutPage.jsx';
+import DonatePage from './pages/DonatePage.jsx';
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
               <Route path="/study/:notebookId" element={<StudyPage />} />
               <Route path="/quiz/:bucket" element={<QuizPage />} />
               <Route path="/questions" element={<QuestionsPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/donate" element={<DonatePage />} />
             </Routes>
           </main>
         </div>

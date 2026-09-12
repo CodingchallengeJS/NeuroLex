@@ -26,8 +26,14 @@ export default function Navbar() {
           <Link to="/">Trang chủ</Link>
           <Link to="/notebooks">Sổ tay</Link>
           <Link to="/questions">Câu hỏi</Link>
+          <Link to="/about">Giới thiệu</Link>
         </div>
         <div className="nav-actions">
+          {/* An icon, not a text link: .nav-links is hidden on phones, and this
+              keeps the donate page reachable there. */}
+          <Link to="/donate" className="icon-btn donate-btn" title="Ủng hộ NeuroLex" aria-label="Ủng hộ NeuroLex">
+            <i className="fa-solid fa-heart"></i>
+          </Link>
           <button className="icon-btn" onClick={() => setShowSettings(true)}>
             <i className="fa-solid fa-gear"></i>
           </button>
