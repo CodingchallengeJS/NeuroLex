@@ -157,7 +157,12 @@ export default function NotebooksPage() {
 
   const wordTagCounts = useMemo(() => countTagUsage(wordSource), [wordSource]);
 
-  const activeTitle = notebooks.find(n => String(n.id) === String(activeNb))?.title;
+  const activeNotebook = notebooks.find(n => String(n.id) === String(activeNb));
+  const activeTitle = activeNotebook?.title;
+  // Mirrors the server: your own notebooks, or built-in ones for admins.
+  const canAddWords = Boolean(user && activeNotebook) && (activeNotebook.owner_user_id == null
+    ? user.isAdmin === true
+    : String(activeNotebook.owner_user_id) === String(user.id));
 
   /* ---------------- render ---------------- */
 
@@ -187,8 +192,8 @@ export default function NotebooksPage() {
                     <h2 className="section-title" style={{ margin: 0, fontSize: '1.25rem' }}>
                       {showingSearch ? `Kết quả cho "${globalQuery}"` : activeTitle}
                     </h2>
-                    {inNotebook && (
-                      <button className="icon-btn" onClick={() => (user ? setShowAddVocabModal(true) : openAuth())} title="Thêm từ vựng">
+                    {inNotebook && canAddWords && (
+                      <button className="icon-btn" onClick={() => setShowAddVocabModal(true)} title="Thêm từ vựng">
                         <i className="fa-solid fa-plus"></i>
                       </button>
                     )}
@@ -280,7 +285,8 @@ export default function NotebooksPage() {
           notebookId={activeNb}
           onClose={() => setShowAddVocabModal(false)}
           onSuccess={(newVocab) => {
-            setVocabs(prev => [...prev, newVocab]);
+            // Adding a word that is already in the notebook links nothing new.
+            setVocabs(prev => (prev.some(v => String(v.id) === String(newVocab.id)) ? prev : [...prev, newVocab]));
             setShowAddVocabModal(false);
           }}
         />

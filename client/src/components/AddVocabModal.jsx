@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { addVocabToNotebook, searchVocab } from '../api';
+import { AuthContext } from '../context/AuthContext';
 
 export default function AddVocabModal({ notebookId, onClose, onSuccess }) {
+  const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     word: '',
     meaning: '',
@@ -78,6 +80,11 @@ export default function AddVocabModal({ notebookId, onClose, onSuccess }) {
     }
   };
 
+  // A word already in the shared vocabulary is only linked to this notebook;
+  // the server ignores meaning fields from non-admins, so they are locked here.
+  const existingWord = suggestions.find(s => s.word === formData.word.trim());
+  const locked = Boolean(existingWord) && !user?.isAdmin;
+
   return (
     <div className="modal-backdrop" onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
       <div className="modal-content card" onClick={e => { e.stopPropagation(); setShowSuggestions(false); }} style={{ width: '90%', maxWidth: '500px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -122,6 +129,16 @@ export default function AddVocabModal({ notebookId, onClose, onSuccess }) {
               </div>
             )}
           </div>
+          {existingWord && (
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-soft)' }}>
+              <i className="fa-solid fa-circle-info"></i>{' '}
+              {user?.isAdmin
+                ? 'Từ này đã có trong kho từ chung. Ô nào bạn sửa sẽ cập nhật cho mọi người; ô để trống giữ nguyên.'
+                : 'Từ này đã có trong kho từ chung, nên sẽ chỉ được thêm vào sổ tay với nghĩa hiện có.'}
+            </p>
+          )}
+          {/* display: contents keeps the form's flex gap; disabled locks every field inside. */}
+          <fieldset disabled={locked} style={{ display: 'contents' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-soft)' }}>Phát âm (Phonetic)</label>
@@ -148,7 +165,8 @@ export default function AddVocabModal({ notebookId, onClose, onSuccess }) {
             <label style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--text-soft)' }}>Ví dụ (Example)</label>
             <textarea name="example" value={formData.example} onChange={handleChange} className="form-input" rows="2" style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--surface-soft)', color: 'var(--text)', resize: 'vertical' }}></textarea>
           </div>
-          
+          </fieldset>
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
             <button type="button" className="btn-outline" onClick={onClose}>Hủy</button>
             <button type="submit" className="btn-primary" disabled={loading}>

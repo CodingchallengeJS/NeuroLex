@@ -2,7 +2,9 @@
 #
 # Creating a web service on its own does NOT create a database. This file does:
 # deploying it as a Blueprint provisions the Postgres instance and the web
-# service together, and wires DATABASE_URL between them automatically.
+# service together. DATABASE_URL is NOT wired automatically: Render asks for it
+# on the first Blueprint apply (paste the database's Internal URL, or a Neon
+# URL) and leaves it alone on later syncs.
 #
 # In the Render dashboard: New -> Blueprint -> pick this repo.
 #
@@ -25,10 +27,13 @@ services:
     region: singapore
     healthCheckPath: /api/health
     envVars:
+      # Set by hand in the dashboard (Render's internal URL, or Neon's).
+      # This used to be `fromDatabase: neurolex-db`, but a Blueprint re-applies
+      # that on every sync, so each auto-deploy switched the app back to the
+      # Render database and any edits made on Neon seemed to disappear.
+      # `sync: false` means Render asks for the value once and never overwrites it.
       - key: DATABASE_URL
-        fromDatabase:
-          name: neurolex-db
-          property: connectionString
+        sync: false
       - key: AUTH_PEPPER
         generateValue: true
       - key: JWT_SECRET

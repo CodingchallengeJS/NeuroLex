@@ -817,35 +817,71 @@ app.post('/api/notebooks/:id/vocabs', authenticateToken, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
-    // Insert or update vocabulary
-    const vocabQ = `
-      INSERT INTO vocabulary (word, meaning, english_meaning, vietnamese_meaning, synonyms, phonetic, example)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (word) DO UPDATE SET
-        meaning = EXCLUDED.meaning,
-        english_meaning = COALESCE(EXCLUDED.english_meaning, vocabulary.english_meaning),
-        vietnamese_meaning = COALESCE(EXCLUDED.vietnamese_meaning, vocabulary.vietnamese_meaning),
-        synonyms = COALESCE(EXCLUDED.synonyms, vocabulary.synonyms),
-        phonetic = COALESCE(EXCLUDED.phonetic, vocabulary.phonetic),
-        example = COALESCE(EXCLUDED.example, vocabulary.example)
-      RETURNING *
-    `;
-    const vocabRes = await client.query(vocabQ, [
-      word.trim(), meaning || '', english_meaning || '', vietnamese_meaning || '', synonyms || '', phonetic || '', example || ''
-    ]);
-    const newVocab = vocabRes.rows[0];
+
+    // Same rule as the notebook tag route: your own notebooks, or built-in ones
+    // if you are an admin.
+    const nb = await client.query('SELECT owner_user_id FROM notebooks WHERE id = $1', [notebookId]);
+    if (nb.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Notebook not found' });
+    }
+    const userId = Number(req.auth.userId);
+    const adminRes = await client.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+    const isAdmin = adminRes.rowCount > 0 && adminRes.rows[0].is_admin === true;
+    const owner = nb.rows[0].owner_user_id;
+    if (owner === null ? !isAdmin : Number(owner) !== userId) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+
+    // `vocabulary` is shared by every user. A new word is created from the form;
+    // an existing one is only linked to the notebook, never overwritten, because
+    // PUT /api/vocabs/:id (admin only) is the one place a shared meaning changes.
+    // Admins may still correct it from here, but a field left blank keeps the
+    // current value rather than erasing it.
+    const fields = [meaning, english_meaning, vietnamese_meaning, synonyms, phonetic, example]
+      .map((v) => (typeof v === 'string' ? v : ''));
+    const inserted = await client.query(
+      `INSERT INTO vocabulary (word, meaning, english_meaning, vietnamese_meaning, synonyms, phonetic, example)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (word) DO NOTHING
+       RETURNING *`,
+      [word.trim(), ...fields]
+    );
+
+    let vocab = inserted.rows[0];
+    let existing = false;
+    if (!vocab) {
+      existing = true;
+      const found = isAdmin
+        ? await client.query(
+          `UPDATE vocabulary SET
+             meaning = COALESCE(NULLIF($2, ''), meaning),
+             english_meaning = COALESCE(NULLIF($3, ''), english_meaning),
+             vietnamese_meaning = COALESCE(NULLIF($4, ''), vietnamese_meaning),
+             synonyms = COALESCE(NULLIF($5, ''), synonyms),
+             phonetic = COALESCE(NULLIF($6, ''), phonetic),
+             example = COALESCE(NULLIF($7, ''), example)
+           WHERE word = $1
+           RETURNING *`,
+          [word.trim(), ...fields]
+        )
+        : await client.query('SELECT * FROM vocabulary WHERE word = $1', [word.trim()]);
+      vocab = found.rows[0];
+    }
 
     // Add to notebook (ignore if already added)
-    const linkQ = `
-      INSERT INTO notebook_vocab (notebook_id, vocab_id)
-      VALUES ($1, $2)
-      ON CONFLICT (notebook_id, vocab_id) DO NOTHING
-    `;
-    await client.query(linkQ, [notebookId, newVocab.id]);
+    const linkRes = await client.query(
+      `INSERT INTO notebook_vocab (notebook_id, vocab_id)
+       VALUES ($1, $2)
+       ON CONFLICT (notebook_id, vocab_id) DO NOTHING`,
+      [notebookId, vocab.id]
+    );
 
     await client.query('COMMIT');
-    res.json({ vocab: newVocab });
+    // existing: the word was already in the shared vocabulary.
+    // alreadyInNotebook: nothing new was linked, so the client must not append it again.
+    res.json({ vocab, existing, alreadyInNotebook: linkRes.rowCount === 0 });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);
