@@ -1,12 +1,22 @@
 import React from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Chart from 'react-apexcharts';
+import { ThemeContext } from '../context/ThemeContext';
+
+// ApexCharts draws SVG attributes, which cannot use CSS variables, so the text,
+// grid and tooltip colours are picked here per theme.
+const CHART_THEMES = {
+  dark: { text: '#ffffff', muted: '#9ca3af', grid: '#374151', stroke: '#0f172a', unlearned: '#374151', tooltip: 'dark' },
+  light: { text: '#1a2a40', muted: '#5b708b', grid: '#d3dff0', stroke: '#ffffff', unlearned: '#cbd5e1', tooltip: 'light' }
+};
 
 export default function VocabularyProgressChart({ summary, total_words, onStartReview, selected_nb }) {
   const [selectedNb, setSelectedNb] = useState(selected_nb || null);
   const [view, setView] = useState('bar');
-  
+  const { resolvedTheme } = useContext(ThemeContext);
+  const ink = CHART_THEMES[resolvedTheme] || CHART_THEMES.dark;
+
   useEffect(() => {
     if(selectedNb != selected_nb) {
       setSelectedNb(selected_nb);
@@ -24,12 +34,12 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
   };
 
   // 1. Tính tổng số từ ĐANG TRONG CHU KỲ HỌC
-  const learningCount = 
-    (data.due_now || 0) + 
-    (data.due_1 || 0) + 
-    (data.due_3 || 0) + 
-    (data.due_7 || 0) + 
-    (data.due_14 || 0) + 
+  const learningCount =
+    (data.due_now || 0) +
+    (data.due_1 || 0) +
+    (data.due_3 || 0) +
+    (data.due_7 || 0) +
+    (data.due_14 || 0) +
     (data.mastered || 0);
 
   // 2. Tổng số từ toàn hệ thống
@@ -46,28 +56,29 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
     data.due_7 || 0,
     data.due_14 || 0,
     data.mastered || 0,
-    unlearnedCount 
+    unlearnedCount
   ];
 
   const totalLearningWords = learningCount;
-  
+
   const labels = ['Ôn tập ngay', 'Ngày mai', '3 ngày', '7 ngày', '14 ngày', 'Nhớ sâu', 'Chưa học'];
-  const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#374151'];
-  
+  const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', ink.unlearned];
+
   // --- CẤU HÌNH DONUT CHART (Giữ nguyên của bạn) ---
   const donutOptions = {
     chart: {
       type: 'donut',
+      foreColor: ink.muted,
       animations: { enabled: true, easing: 'easeinout', speed: 800 },
     },
     colors: colors,
     labels: labels,
-    stroke: { show: true, colors: ['#0f172a'], width: 1 },
+    stroke: { show: true, colors: [ink.stroke], width: 1 },
     dataLabels: { enabled: false },
     legend: { show: false },
     tooltip: {
       enabled: true,
-      theme: 'dark',
+      theme: ink.tooltip,
       y: {
         formatter: function (value) {
           const percent = totalWords > 0 ? Math.round((value / totalWords) * 100) : 0;
@@ -82,10 +93,10 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
           size: '75%',
           labels: {
             show: true,
-            name: { show: true, color: '#9ca3af', fontSize: '13px', fontFamily: 'Inter, sans-serif' },
+            name: { show: true, color: ink.muted, fontSize: '13px', fontFamily: 'Inter, sans-serif' },
             value: {
               show: true,
-              color: '#ffffff',
+              color: ink.text,
               fontSize: '22px',
               fontWeight: '700',
               fontFamily: 'Inter, sans-serif',
@@ -99,7 +110,7 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
               show: true,
               showAlways: true,
               label: 'Đã học',
-              color: '#9ca3af',
+              color: ink.muted,
               fontSize: '13px',
               fontFamily: 'Inter, sans-serif',
               formatter: function () {
@@ -122,11 +133,11 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
   const barOptions = {
     chart: {
       type: 'bar',
+      foreColor: ink.muted,
       toolbar: { show: false },
       events: {
         // Bắt sự kiện click vào cột
         dataPointSelection: (event, chartContext, config) => {
-          console.log("hi");
           const dataIndex = config.dataPointIndex;
           if (dataIndex >= 0 && dataIndex < reviewKeys.length && onStartReview) {
             handleStartReview(reviewKeys[dataIndex]);
@@ -153,6 +164,9 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
       style: {
         fontSize: '12px',
         fontFamily: 'Inter, sans-serif',
+        // The numbers sit above the bars, on the panel background, so they
+        // follow the theme's text colour rather than each bar's colour.
+        colors: [ink.text],
       }
     },
     legend: { show: false }, // Ẩn legend vì đã dùng distributed
@@ -160,7 +174,7 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
       categories: barLabels,
       labels: {
         style: {
-          colors: barLabels.map(() => '#9ca3af'), // Đổi màu text trục X cho phù hợp dark mode
+          colors: barLabels.map(() => ink.muted),
           fontSize: '11px',
           fontFamily: 'Inter, sans-serif',
         }
@@ -172,7 +186,7 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
       minWidth: 200,
       labels: {
         style: {
-          colors: '#9ca3af'
+          colors: ink.muted
         },
         formatter: function (val) {
         return (val < 100?' ': '') + val;
@@ -180,15 +194,15 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
       }
     },
     grid: {
-      borderColor: '#374151',
+      borderColor: ink.grid,
       strokeDashArray: 4,
     },
     tooltip: {
-      theme: 'dark'
+      theme: ink.tooltip
     }
   };
 
-  if (totalWords === 0) return <div className="h-[200px] flex items-center justify-center text-gray-500">Đang tải biểu đồ...</div>;
+  if (totalWords === 0) return <div className="h-[200px] flex items-center justify-center chart-hint">Đang tải biểu đồ...</div>;
 
   return (
     <div className="w-full flex flex-col">
@@ -228,7 +242,7 @@ export default function VocabularyProgressChart({ summary, total_words, onStartR
         </div>
       ) : (
         <div className="w-full cursor-pointer">
-          <h4 className="text-sm text-gray-400 font-medium text-center">Nhấn vào cột để bắt đầu ôn tập</h4>
+          <h4 className="text-sm chart-hint font-medium text-center">Nhấn vào cột để bắt đầu ôn tập</h4>
           <Chart
             options={barOptions}
             series={[{ name: 'Số lượng từ', data: barSeriesData }]}

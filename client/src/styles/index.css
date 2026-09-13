@@ -46,6 +46,16 @@
   --primary-strong: #2f86f5;
   --accent: #6ec8ff;
 
+  /* Status colours used as text. On the dark background the bright colours
+     read fine as they are; the light theme swaps in darker ones. */
+  --primary-ink: var(--primary);
+  --accent-ink: var(--accent);
+  --info-ink: var(--info);
+  --success-ink: var(--success);
+  --warning-ink: var(--warning);
+  --danger-ink: var(--danger);
+  --mastered-ink: var(--mastered);
+
   /* --- B. Ép Shadcn UI dùng màu Dark Mode của bro --- */
   --background: var(--bg);
   --foreground: var(--text);
@@ -101,8 +111,14 @@
    ========================================= */
 :root[data-theme='light'] {
   /* --- Custom Variables gốc --- */
-  --bg: #edf4ff;
+  /* Three steps from back to front: page background (darkest), panels, then
+     white cards. Panels are a light-only variable; dark mode keeps the
+     surface colours they used before. */
+  --bg: #dfe8f4;
   --bg-soft: #f4f8ff;
+  --panel: #f4f7fc;
+  --panel-header: #e9f0fa;
+  --field-border: 1px solid var(--line);
   --card: #ffffff;
   --surface-strong: #e1ecfd;
   --surface-soft: #f0f5ff;
@@ -115,6 +131,22 @@
   --primary: #2f86f5;
   --primary-strong: #1a65c9;
   --accent: #0099ff;
+
+  /* The dark theme's black shadows read as heavy outlines on a light page;
+     a faint navy tint just lifts cards off the background. */
+  --shadow-sm: 0 2px 8px rgba(26, 42, 64, 0.08);
+  --shadow-md: 0 6px 20px rgba(26, 42, 64, 0.12);
+  --shadow-glow: 0 0 18px rgba(47, 134, 245, 0.2);
+
+  /* Status colours as text: darker than the bright fills so they stay readable
+     on white (tag chips, verdicts, due counts). */
+  --primary-ink: #1a65c9;
+  --accent-ink: #0070c0;
+  --info-ink: #0a7596;
+  --success-ink: #2b7a0b;
+  --warning-ink: #a85a00;
+  --danger-ink: #c92a2a;
+  --mastered-ink: #9a7300;
 
   /* --- Bê toàn bộ config mới của Shadcn vào đây --- */
   --background: oklch(1 0 0);
@@ -209,11 +241,12 @@ h4 { font-size: 1.1rem; font-weight: 600; line-height: 1.4; }
 
 p { font-size: 1rem; color: var(--text-soft); }
 
-.text-danger { color: var(--danger); }
-.text-warning { color: var(--warning); }
-.text-info { color: var(--info); }
-.text-success { color: var(--success); }
-.text-mastered { color: var(--mastered); }
+.text-danger { color: var(--danger-ink); }
+.text-warning { color: var(--warning-ink); }
+.text-info { color: var(--info-ink); }
+.text-success { color: var(--success-ink); }
+.text-mastered { color: var(--mastered-ink); }
+.chart-hint { color: var(--text-soft); }
 
 /* Layout */
 .app-container {
@@ -423,7 +456,7 @@ p { font-size: 1rem; color: var(--text-soft); }
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--surface-soft);
+  background: var(--panel, var(--surface-soft));
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
@@ -431,7 +464,7 @@ p { font-size: 1rem; color: var(--text-soft); }
 
 .notebooks-col-header {
   padding: 1.5rem 2rem;
-  background: var(--surface-strong);
+  background: var(--panel-header, var(--surface-strong));
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   z-index: 10;
 }
@@ -635,7 +668,7 @@ p { font-size: 1rem; color: var(--text-soft); }
   flex-direction: column;
   padding: 2rem;
   margin: 0;
-  background: var(--surface-strong);
+  background: var(--panel, var(--surface-strong));
   border: none;
   box-shadow: var(--shadow-md);
   border-radius: var(--radius-xl);
@@ -644,7 +677,8 @@ p { font-size: 1rem; color: var(--text-soft); }
 .form-select {
   width: 100%;
   background: var(--surface-soft);
-  border: none;
+  /* Light panels are nearly the same tint as the select, so light mode outlines it. */
+  border: var(--field-border, none);
   color: var(--text);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-sm);
@@ -855,7 +889,7 @@ p { font-size: 1rem; color: var(--text-soft); }
 .form-group input:focus { outline: none; border-color: var(--primary); }
 .error-alert {
   background: rgba(255, 107, 107, 0.1);
-  color: var(--danger);
+  color: var(--danger-ink);
   padding: 0.75rem;
   border-radius: var(--radius-sm);
   margin-bottom: 1rem;
@@ -1052,11 +1086,11 @@ p { font-size: 1rem; color: var(--text-soft); }
   box-shadow: 0 0 0 2px var(--primary);
 }
 
-.tag-exam     { background: color-mix(in srgb, var(--primary) 22%, transparent); color: var(--primary); border-color: color-mix(in srgb, var(--primary) 40%, transparent); }
-.tag-source   { background: color-mix(in srgb, var(--info) 18%, transparent);    color: var(--info);    border-color: color-mix(in srgb, var(--info) 35%, transparent); }
-.tag-topic    { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, transparent); }
-.tag-level    { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); border-color: color-mix(in srgb, var(--warning) 35%, transparent); }
-.tag-function { background: color-mix(in srgb, var(--accent) 20%, transparent);  color: var(--accent);  border-color: color-mix(in srgb, var(--accent) 38%, transparent); }
+.tag-exam     { background: color-mix(in srgb, var(--primary) 22%, transparent); color: var(--primary-ink); border-color: color-mix(in srgb, var(--primary) 40%, transparent); }
+.tag-source   { background: color-mix(in srgb, var(--info) 18%, transparent);    color: var(--info-ink);    border-color: color-mix(in srgb, var(--info) 35%, transparent); }
+.tag-topic    { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success-ink); border-color: color-mix(in srgb, var(--success) 35%, transparent); }
+.tag-level    { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning-ink); border-color: color-mix(in srgb, var(--warning) 35%, transparent); }
+.tag-function { background: color-mix(in srgb, var(--accent) 20%, transparent);  color: var(--accent-ink);  border-color: color-mix(in srgb, var(--accent) 38%, transparent); }
 .tag-register { background: var(--surface-strong); color: var(--text-soft); border-color: var(--line); }
 .tag-other    { background: var(--surface-strong); color: var(--text-soft); border-color: var(--line); }
 
@@ -1188,7 +1222,7 @@ p { font-size: 1rem; color: var(--text-soft); }
   padding: 0;
   overflow: hidden;
   /* .card would make this brighter than the notebook and repetition panels. */
-  background: var(--surface-strong);
+  background: var(--panel, var(--surface-strong));
 }
 .tag-col-header {
   display: flex;
@@ -1399,11 +1433,11 @@ p { font-size: 1rem; color: var(--text-soft); }
   font-weight: 600;
 }
 .q-diff.easy {
-  color: var(--success);
+  color: var(--success-ink);
   border-color: color-mix(in srgb, var(--success) 35%, transparent);
 }
 .q-diff.hard {
-  color: var(--warning);
+  color: var(--warning-ink);
   border-color: color-mix(in srgb, var(--warning) 40%, transparent);
 }
 .q-tag-row { gap: 0.4rem; }
@@ -1469,8 +1503,8 @@ p { font-size: 1rem; color: var(--text-soft); }
 .q-result.is-correct { border-color: var(--success); }
 .q-result.is-wrong { border-color: var(--danger); }
 .q-result-verdict { font-weight: 600; }
-.q-result.is-correct .q-result-verdict { color: var(--success); }
-.q-result.is-wrong .q-result-verdict { color: var(--danger); }
+.q-result.is-correct .q-result-verdict { color: var(--success-ink); }
+.q-result.is-wrong .q-result-verdict { color: var(--danger-ink); }
 .q-explanation { margin: 0; color: var(--text-soft); font-size: 0.9rem; }
 
 .q-progress-change, .q-words {
@@ -1485,11 +1519,11 @@ p { font-size: 1rem; color: var(--text-soft); }
 .q-word { border: 1px solid transparent; opacity: 0.6; }
 .q-word.studied {
   opacity: 1;
-  color: var(--primary);
+  color: var(--primary-ink);
   border-color: color-mix(in srgb, var(--primary) 40%, transparent);
 }
 .q-word.due {
-  color: var(--warning);
+  color: var(--warning-ink);
   border-color: color-mix(in srgb, var(--warning) 45%, transparent);
 }
 
@@ -1579,9 +1613,9 @@ p { font-size: 1rem; color: var(--text-soft); }
   box-shadow: var(--shadow-md);
   font-size: 0.9rem;
 }
-.merge-toast > i { color: var(--success); }
+.merge-toast > i { color: var(--success-ink); }
 .merge-toast.is-error { border-left-color: var(--warning); }
-.merge-toast.is-error > i { color: var(--warning); }
+.merge-toast.is-error > i { color: var(--warning-ink); }
 .merge-toast .icon-btn { font-size: 1rem; }
 
 .hero-note { margin-top: 1rem; color: var(--text-soft); font-size: 0.9rem; }
@@ -1835,6 +1869,21 @@ p { font-size: 1rem; color: var(--text-soft); }
 .chat-header-actions .icon-btn.active { background: var(--surface-soft); color: var(--primary); }
 
 .chat-body-scroll { flex: 1; overflow-y: auto; }
+
+/* Same thin scrollbar as the notebook and vocab lists. Only the ::-webkit
+   rules, like theirs: in current Chrome the standard scrollbar-color and
+   scrollbar-width properties take over from ::-webkit-scrollbar when set,
+   which would make the chat look different from the rest of the app. */
+.chat-messages::-webkit-scrollbar,
+.chat-body-scroll::-webkit-scrollbar,
+.chat-input textarea::-webkit-scrollbar,
+.safe-md pre::-webkit-scrollbar,
+.safe-md-table::-webkit-scrollbar { width: 6px; height: 6px; }
+.chat-messages::-webkit-scrollbar-thumb,
+.chat-body-scroll::-webkit-scrollbar-thumb,
+.chat-input textarea::-webkit-scrollbar-thumb,
+.safe-md pre::-webkit-scrollbar-thumb,
+.safe-md-table::-webkit-scrollbar-thumb { background: var(--surface-hover); border-radius: 4px; }
 .chat-messages {
   flex: 1;
   display: flex;
@@ -1884,7 +1933,7 @@ p { font-size: 1rem; color: var(--text-soft); }
   border: 1px solid rgba(255, 107, 107, 0.3);
   border-radius: var(--radius-sm);
   background: rgba(255, 107, 107, 0.1);
-  color: var(--danger);
+  color: var(--danger-ink);
   font-size: 0.82rem;
 }
 
@@ -1986,7 +2035,7 @@ p { font-size: 1rem; color: var(--text-soft); }
   border-radius: var(--radius-sm);
   background: var(--surface-soft);
 }
-.chat-key-saved i { color: var(--success); }
+.chat-key-saved i { color: var(--success-ink); }
 .chat-key-saved code { font-family: monospace; }
 .chat-field { display: flex; flex-direction: column; gap: 0.35rem; }
 .chat-field > span { font-weight: 600; }
