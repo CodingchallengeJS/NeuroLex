@@ -48,6 +48,33 @@ if (process.env.TRUST_PROXY !== 'false') {
   app.set('trust proxy', 1);
 }
 
+// Content-Security-Policy. The AI chat keeps each user's own Gemini API key in
+// their browser, and the promise that the key only ever goes to Google rests on
+// this header: connect-src lets page scripts reach this server and the Gemini
+// API and nothing else, so even an injected script could not send the key to a
+// third host. script-src is 'self' only (the build has no inline scripts).
+// Styles keep 'unsafe-inline' because React style props and ApexCharts set
+// inline styles; fonts and Font Awesome come from the two CDNs in index.html.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
+  "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+  "img-src 'self' data: blob:",
+  "connect-src 'self' https://generativelanguage.googleapis.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'"
+].join('; ');
+
+app.use((_req, res, next) => {
+  res.setHeader('Content-Security-Policy', CONTENT_SECURITY_POLICY);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
 // Login and registration are the only unauthenticated write endpoints, so they
 // are what a credential-stuffing run would hammer.
 const authLimiter = rateLimit({

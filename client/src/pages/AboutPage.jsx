@@ -122,12 +122,21 @@ export default function AboutPage() {
       </section>
 
       <section className="card info-section">
+        <h2><i className="fa-solid fa-wand-magic-sparkles"></i> Trợ lý AI</h2>
+        <p>
+          Nút “Hỏi AI” ở góc màn hình mở một trợ lý học tập: hỏi nghĩa, cách dùng, ví dụ, hoặc nhờ giải thích một câu
+          hỏi Word in Context. Trợ lý dùng khoá Gemini API của chính bạn, khoá chỉ nằm trong trình duyệt và chỉ được gửi
+          thẳng tới Google. Dành cho người đủ 18 tuổi, theo điều khoản của Google.
+        </p>
+      </section>
+
+      <section className="card info-section">
         <h2><i className="fa-brands fa-github"></i> Mã nguồn mở</h2>
         <p>
           NeuroLex miễn phí và không có quảng cáo. Mã nguồn được công khai trên{' '}
           <a className="info-link" href="https://github.com/CodingchallengeJS/NeuroLex" target="_blank" rel="noreferrer">
             GitHub
-          </a>.
+          </a>. Xem thêm <Link className="info-link" to="/privacy">chính sách quyền riêng tư</Link>.
         </p>
       </section>
 

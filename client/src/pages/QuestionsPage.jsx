@@ -5,6 +5,8 @@ import { AuthContext } from '../context/AuthContext';
 import SearchInput from '../components/SearchInput';
 import TagChip from '../components/TagChip';
 import GuestNotice from '../components/GuestNotice';
+import AskAiButton from '../components/AskAiButton';
+import { questionContext } from '../lib/aiContext';
 
 const PAGE_SIZE = 50;
 
@@ -370,6 +372,13 @@ export default function QuestionsPage() {
               </div>
 
               {current.explanation && <p className="q-explanation">{current.explanation}</p>}
+
+              <div>
+                <AskAiButton
+                  getContext={() => questionContext(current, selectedKey)}
+                  label="Hỏi AI giải thích câu này"
+                />
+              </div>
 
               {result?.updated_progress?.length > 0 && (
                 <div className="q-progress-change">

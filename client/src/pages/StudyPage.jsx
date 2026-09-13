@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchReviewSequence, submitReviewStep } from '../api';
 import GuestNotice from '../components/GuestNotice';
+import AskAiButton from '../components/AskAiButton';
+import { vocabContext } from '../lib/aiContext';
 
 export default function StudyPage() {
   const { notebookId } = useParams();
@@ -113,6 +115,10 @@ export default function StudyPage() {
                 ))}
               </div>
             )}
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
+              <AskAiButton getContext={() => vocabContext(word)} label="Hỏi AI về từ này" />
+            </div>
 
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
               <button className="btn-outline" onClick={() => handleResult(0)} disabled={submitting} style={{ borderColor: 'var(--danger)', color: 'var(--danger)', flex: 1, padding: '0.75rem' }}>

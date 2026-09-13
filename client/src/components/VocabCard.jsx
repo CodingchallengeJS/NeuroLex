@@ -1,6 +1,8 @@
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { vocabContext } from '../lib/aiContext';
 import TagChip from './TagChip';
+import AskAiButton from './AskAiButton';
 
 export default function VocabCard({ vocab, onEdit }) {
   const { user } = useContext(AuthContext);
@@ -29,13 +31,14 @@ export default function VocabCard({ vocab, onEdit }) {
               <i className="fa-solid fa-pen"></i>
             </button>
           )}
+          <AskAiButton variant="icon" getContext={() => vocabContext(vocab)} title={`Hỏi AI về "${vocab.word}"`} />
           <button className="icon-btn audio-btn" onClick={playAudio} title="Nghe phát âm">
             <i className="fa-solid fa-volume-high"></i>
           </button>
         </div>
       </div>
       {vocab.phonetic && <div className="vc-phonetic">{vocab.phonetic}</div>}
-      
+
       <div className="vc-meanings">
         {vocab.english_meaning && <p className="en-meaning">{vocab.english_meaning}</p>}
         {vocab.vietnamese_meaning && <p className="vi-meaning">{vocab.vietnamese_meaning}</p>}
