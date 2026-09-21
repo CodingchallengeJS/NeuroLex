@@ -1566,7 +1566,8 @@ p { font-size: 1rem; color: var(--text-soft); }
   font-family: 'Minion Pro', 'Times New Roman', Times, serif;
 }
 .q-passage {
-  font-size: 1.12rem;
+  /* --passage-size comes from the Aa slider on the card (QuestionCard.jsx) */
+  font-size: var(--passage-size, 1.12rem);
   line-height: 1.7;
   color: var(--text);
   margin-bottom: 1.25rem;
@@ -1583,7 +1584,20 @@ p { font-size: 1rem; color: var(--text-soft); }
 .questions-card .quiz-options.q-options-long { grid-template-columns: 1fr; }
 .q-options-long .quiz-option { align-items: flex-start; }
 /* Serif faces run smaller than Lexend at the same size, hence the bump. */
-.q-options-long .opt-main-text { font-size: 1.08rem; line-height: 1.55; }
+.q-options-long .opt-main-text { font-size: calc(var(--passage-size, 1.12rem) * 0.96); line-height: 1.55; }
+
+.q-size {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: -0.25rem 0 0.75rem;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+.q-size input[type="range"] { width: 140px; accent-color: var(--primary); cursor: pointer; }
+.q-size-small { font-size: 0.8rem; font-family: 'Times New Roman', serif; }
+.q-size-large { font-size: 1.25rem; font-family: 'Times New Roman', serif; }
 .q-explanation p { margin: 0 0 0.6rem; }
 .q-explanation p:last-child { margin-bottom: 0; }
 

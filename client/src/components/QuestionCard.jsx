@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import AskAiButton from './AskAiButton';
 import { questionContext } from '../lib/aiContext';
 
@@ -57,8 +58,48 @@ function Passage({ text }) {
   );
 }
 
+// Passage/choice text size for SAT questions, in rem. Remembered per browser,
+// like the zoom a reader sets once in Bluebook and forgets about.
+const SIZE_KEY = 'neurolex.passageSize';
+const SIZE_MIN = 0.9;
+const SIZE_MAX = 1.6;
+const SIZE_DEFAULT = 1.12;
+
+function readSize() {
+  try {
+    const n = Number.parseFloat(localStorage.getItem(SIZE_KEY));
+    return Number.isFinite(n) ? Math.min(Math.max(n, SIZE_MIN), SIZE_MAX) : SIZE_DEFAULT;
+  } catch {
+    return SIZE_DEFAULT;
+  }
+}
+
+function PassageSizeControl({ size, onChange }) {
+  return (
+    <label className="q-size" title="Cỡ chữ đoạn văn và đáp án">
+      <span className="q-size-small" aria-hidden="true">A</span>
+      <input
+        type="range"
+        min={SIZE_MIN}
+        max={SIZE_MAX}
+        step={0.02}
+        value={size}
+        onChange={e => onChange(Number(e.target.value))}
+        onDoubleClick={() => onChange(SIZE_DEFAULT)}
+        aria-label="Cỡ chữ đoạn văn"
+      />
+      <span className="q-size-large" aria-hidden="true">A</span>
+    </label>
+  );
+}
+
 export default function QuestionCard({ question, selectedKey, result, onAnswer, header, progress, children }) {
   const isReading = Boolean(question.passage);
+  const [size, setSize] = useState(readSize);
+  const changeSize = (next) => {
+    setSize(next);
+    try { localStorage.setItem(SIZE_KEY, String(next)); } catch { /* not remembered, still applied */ }
+  };
 
   const optionClass = (key) => {
     if (!selectedKey) return '';
@@ -68,7 +109,7 @@ export default function QuestionCard({ question, selectedKey, result, onAnswer, 
   };
 
   return (
-    <div className="card questions-card">
+    <div className="card questions-card" style={isReading ? { '--passage-size': `${size}rem` } : undefined}>
       <div className="quiz-progress-bar">
         <div className="quiz-progress-fill" style={{ width: `${Math.min(Math.max(progress || 0, 0), 1) * 100}%` }} />
       </div>
@@ -87,6 +128,8 @@ export default function QuestionCard({ question, selectedKey, result, onAnswer, 
           </span>
         )}
       </div>
+
+      {isReading && <PassageSizeControl size={size} onChange={changeSize} />}
 
       {question.figure_url && (
         <figure className="q-figure">
