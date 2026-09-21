@@ -24,8 +24,9 @@ export const fetchRepetitionItems = (bucket, notebookId) => apiFetch(`/repetitio
 export const generateQuiz = (bucket, notebookId) => (signedIn()
   ? apiFetch(`/quiz/generate?bucket=${bucket}${notebookId ? `&notebook_id=${notebookId}` : ''}`)
   : guest.guestGenerateQuiz(bucket, notebookId));
-export const submitQuiz = (results) => (signedIn()
-  ? apiFetch('/quiz/submit', { method: 'POST', body: JSON.stringify({ results }) })
+// bucket is recorded so a finished 'due_now' quiz can keep the daily streak.
+export const submitQuiz = (results, bucket) => (signedIn()
+  ? apiFetch('/quiz/submit', { method: 'POST', body: JSON.stringify({ results, bucket }) })
   : guest.guestSubmitQuiz(results));
 export const searchVocab = (query, notebookId) => apiFetch(`/search?q=${encodeURIComponent(query)}${notebookId ? `&notebook_id=${notebookId}` : ''}`);
 export const splitChunk = () => apiFetch('/repetition/split-chunk', { method: 'POST' });
@@ -85,6 +86,11 @@ export const fetchQuestions = ({ tags = [], only_studied = false, ...rest } = {}
 export const submitQuestionAttempt = (question, selectedKey) => (signedIn()
   ? apiFetch('/questions/attempt', { method: 'POST', body: JSON.stringify({ question_id: question.id, selected_key: selectedKey }) })
   : guest.guestQuestionAttempt(question, selectedKey));
+
+export const fetchQuestionSets = () => apiFetch('/question-sets');
+
+// --- Daily streak (signed-in only: a guest keeps no per-day history) ---
+export const fetchStreak = () => apiFetch('/streak');
 
 // --- Word tags ---
 export const fetchVocabTags = (vocabId) => apiFetch(`/vocabs/${vocabId}/tags`);

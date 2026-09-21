@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { generateQuiz, submitQuiz } from '../api';
 import { AuthContext } from '../context/AuthContext';
+import { StreakContext } from '../context/StreakContext';
 import QuizQuestion from '../components/QuizQuestion';
 import GuestNotice from '../components/GuestNotice';
 
@@ -10,6 +11,7 @@ export default function QuizPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const { refreshStreak } = useContext(StreakContext);
 
   const searchParams = new URLSearchParams(location.search);
   const notebookId = searchParams.get('notebook_id');
@@ -90,8 +92,10 @@ export default function QuizPage() {
       correct_count
     }));
     try {
-      await submitQuiz(results);
+      await submitQuiz(results, bucket);
       setSubmitSuccess(true);
+      // A finished 'Ôn tập hôm nay' quiz keeps the daily streak.
+      refreshStreak();
     } catch (e) {
       console.error(e);
     }

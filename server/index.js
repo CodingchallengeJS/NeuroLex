@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { rateLimit } = require('express-rate-limit');
 const { createPool } = require('./db');
+const { computeStreak, heatmapStart } = require('./streak');
 
 const app = express();
 
@@ -1579,9 +1580,17 @@ async function applyQuestionResult(client, userId, vocabId, isCorrect) {
   return { previous_level: currentLevel, ...ur.rows[0] };
 }
 
+// Same keys as the conditions map in /api/quiz/generate.
+const REVIEW_BUCKETS = ['due_now', 'due_1', 'due_3', 'due_7', 'due_14', 'mastered'];
+
 app.post('/api/quiz/submit', authenticateToken, async (req, res) => {
   const userId = Number(req.auth.userId);
   const results = req.body.results; // Array of { vocab_id, correct_count }
+  // Which review bucket the quiz came from. Optional; a finished 'due_now' quiz
+  // is one of the two things that keep the daily streak.
+  const bucket = typeof req.body.bucket === 'string' && REVIEW_BUCKETS.includes(req.body.bucket)
+    ? req.body.bucket
+    : null;
 
   if (!Array.isArray(results)) {
     return res.status(400).json({ error: 'Invalid payload' });
@@ -1602,7 +1611,15 @@ app.post('/api/quiz/submit', authenticateToken, async (req, res) => {
         });
       }
     }
-    
+
+    if (updatedProgress.length > 0) {
+      await client.query(
+        `INSERT INTO user_quiz_sessions (user_id, bucket, word_count, correct_words)
+         VALUES ($1, $2, $3, $4)`,
+        [userId, bucket, updatedProgress.length, results.filter((r) => r.correct_count === 2).length]
+      );
+    }
+
     await client.query('COMMIT');
     return res.json({ results: updatedProgress });
   } catch (err) {
@@ -1662,11 +1679,16 @@ function questionFilters(req, { forceStudied }) {
   const setSlug = String(req.query.set || '').trim();
   if (setSlug) filters += ` AND qs.slug = ${add(setSlug)}`;
 
+  // SAT skill (Inferences, Command of Evidence, ...). Only the College Board
+  // set has one; the 440 set has NULL and simply never matches.
+  const skill = String(req.query.skill || '').trim();
+  if (skill) filters += ` AND q.skill = ${add(skill)}`;
+
   const search = String(req.query.q || '').trim();
   if (search) {
     // options is JSONB, so ::text lets one pattern cover prompt and choices.
     const p = add('%' + search + '%');
-    filters += ` AND (q.prompt ILIKE ${p} OR q.options::text ILIKE ${p})`;
+    filters += ` AND (q.prompt ILIKE ${p} OR q.passage ILIKE ${p} OR q.options::text ILIKE ${p})`;
   }
 
   const notebookId = req.query.notebook_id ? Number(req.query.notebook_id) : null;
@@ -1854,6 +1876,7 @@ async function listQuestions(req, res, source, forceStudied) {
     const sql = `${source.ctes}
       SELECT q.id, q.external_id, q.prompt, q.question_type, q.options,
              q.answer_key, q.explanation, q.difficulty, q.word_count,
+             q.passage, q.figure_url, q.skill, q.source_id,
              qs.slug AS set_slug, qs.title AS set_title,
              COUNT(*) OVER () AS total,
              COALESCE(w.words, '[]') AS words,
@@ -1999,6 +2022,98 @@ app.post('/api/questions/attempt', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   } finally {
     client.release();
+  }
+});
+
+// The sets the Questions page can switch between, with their sizes.
+app.get('/api/question-sets', async (_req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT qs.slug, qs.title, COUNT(q.id)::int AS count,
+              ARRAY_REMOVE(ARRAY_AGG(DISTINCT q.skill), NULL) AS skills
+       FROM question_sets qs
+       LEFT JOIN questions q ON q.set_id = qs.id
+       GROUP BY qs.id
+       ORDER BY qs.id`
+    );
+    return res.json({ sets: r.rows });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/* ---------- DAILY STREAK ---------- */
+
+// Only the SAT Hard set counts toward the daily goal: that is the practice the
+// streak exists to build. The 440 word-in-context set is still there to use.
+const STREAK_SET = 'sat-cb-hard';
+// Days roll over at local midnight here, not UTC midnight (07:00 in Vietnam).
+const STREAK_TZ = process.env.STREAK_TZ || 'Asia/Ho_Chi_Minh';
+
+// answered_at / finished_at are TIMESTAMP (no zone) filled by NOW(), i.e.
+// written in the session's TimeZone. Reading them back in that same zone and
+// converting is right wherever the database runs: UTC on Render/Neon, whatever
+// a local Postgres is set to.
+const localDay = (col) =>
+  `to_char((${col} AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE $2, 'YYYY-MM-DD')`;
+
+app.get('/api/streak', authenticateToken, async (req, res) => {
+  const userId = Number(req.auth.userId);
+  try {
+    const [activity, bank] = await Promise.all([
+      pool.query(
+        `WITH hard AS (
+           SELECT ${localDay('a.answered_at')} AS day,
+                  COUNT(DISTINCT a.question_id)::int AS hard,
+                  COUNT(DISTINCT a.question_id) FILTER (WHERE a.is_correct)::int AS correct
+           FROM user_question_attempts a
+           JOIN questions q ON q.id = a.question_id
+           JOIN question_sets s ON s.id = q.set_id
+           WHERE a.user_id = $1 AND s.slug = $3
+           GROUP BY 1
+         ),
+         quiz AS (
+           SELECT ${localDay('finished_at')} AS day, COUNT(*)::int AS quiz
+           FROM user_quiz_sessions
+           WHERE user_id = $1 AND bucket = 'due_now'
+           GROUP BY 1
+         )
+         SELECT COALESCE(h.day, z.day) AS day,
+                COALESCE(h.hard, 0) AS hard, COALESCE(h.correct, 0) AS correct,
+                COALESCE(z.quiz, 0) AS quiz,
+                to_char(now() AT TIME ZONE $2, 'YYYY-MM-DD') AS today
+         FROM hard h FULL JOIN quiz z ON z.day = h.day
+         UNION ALL
+         -- one row that always exists, so "today" comes back for a new user
+         SELECT NULL, 0, 0, 0, to_char(now() AT TIME ZONE $2, 'YYYY-MM-DD')`,
+        [userId, STREAK_TZ, STREAK_SET]
+      ),
+      // Progress through the bank, by each question's LATEST attempt.
+      pool.query(
+        `SELECT (SELECT COUNT(*) FROM questions q JOIN question_sets s ON s.id = q.set_id
+                 WHERE s.slug = $2)::int AS total,
+                COUNT(*)::int AS answered,
+                COUNT(*) FILTER (WHERE last.is_correct)::int AS correct
+         FROM (
+           SELECT DISTINCT ON (a.question_id) a.is_correct
+           FROM user_question_attempts a
+           JOIN questions q ON q.id = a.question_id
+           JOIN question_sets s ON s.id = q.set_id
+           WHERE a.user_id = $1 AND s.slug = $2
+           ORDER BY a.question_id, a.answered_at DESC, a.id DESC
+         ) last`,
+        [userId, STREAK_SET]
+      )
+    ]);
+
+    const today = activity.rows[0].today;
+    const rows = activity.rows.filter((r) => r.day !== null);
+    const result = computeStreak(rows, today, { windowStart: heatmapStart(today) });
+    return res.json({ ...result, bank: bank.rows[0], set: STREAK_SET, time_zone: STREAK_TZ });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

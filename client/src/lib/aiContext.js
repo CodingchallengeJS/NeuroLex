@@ -44,8 +44,20 @@ export function questionContext(question, selectedKey) {
   const options = question.options || {};
   const answer = question.answer_key;
   const number = question.external_id ? ` #${question.external_id}` : '';
+  // SAT reading questions carry a passage (with <u> marking the underlined
+  // part) and sometimes a chart the model cannot see.
+  const passage = question.passage
+    ? [clip(question.passage.replace(/<u>(.*?)<\/u>/g, '[gạch chân: $1]'), 3000), '']
+    : [];
+  if (question.figure_url) {
+    passage.push('(Câu này có kèm biểu đồ/bảng số liệu dạng ảnh, không có trong đoạn chữ này.)', '');
+  }
+  const heading = question.set_slug === 'sat-cb-hard'
+    ? `Câu hỏi SAT Reading & Writing (College Board, Hard${question.skill ? `, ${question.skill}` : ''})${number} trên NeuroLex:`
+    : `Câu hỏi Word in Context${number} trên NeuroLex:`;
   const lines = [
-    `Câu hỏi Word in Context${number} trên NeuroLex:`,
+    heading,
+    ...passage,
     clip(question.prompt, 2000),
     '',
     'Các lựa chọn:',

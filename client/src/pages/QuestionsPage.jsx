@@ -1,14 +1,29 @@
 import { useState, useEffect, useContext, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { fetchQuestions, submitQuestionAttempt, fetchTags } from '../api';
+import { fetchQuestions, submitQuestionAttempt, fetchTags, fetchQuestionSets } from '../api';
 import { AuthContext } from '../context/AuthContext';
+import { StreakContext } from '../context/StreakContext';
 import SearchInput from '../components/SearchInput';
 import TagChip from '../components/TagChip';
 import GuestNotice from '../components/GuestNotice';
-import AskAiButton from '../components/AskAiButton';
-import { questionContext } from '../lib/aiContext';
+import QuestionCard, { skillLabel } from '../components/QuestionCard';
+import DailyPanel from '../components/DailyPanel';
+import { SAT_SET, WIC_SET } from '../lib/questionSets';
 
 const PAGE_SIZE = 50;
+
+const SET_KEY = 'neurolex.questionSet';
+
+// Short labels for the switcher; the server's titles are long.
+const SET_LABELS = { [SAT_SET]: 'SAT Khó', [WIC_SET]: 'Từ trong ngữ cảnh' };
+
+function readStoredSet() {
+  try {
+    return localStorage.getItem(SET_KEY) || SAT_SET;
+  } catch {
+    return SAT_SET;
+  }
+}
 
 const STATUSES = [
   { key: 'all', label: 'Tất cả' },
@@ -16,8 +31,9 @@ const STATUSES = [
   { key: 'got_wrong', label: 'Từng sai' }
 ];
 
-// easy/hard come from the prompt's word count (migration 007): under 45 words
-// is easy. The bank's median is 42, so this splits it 250 / 177.
+// easy/hard for the 440 set come from the prompt's word count (migration 007):
+// under 45 words is easy. The SAT set is all College Board "Hard", so this
+// toggle only appears for the 440 set.
 const DIFFICULTIES = [
   { key: '', label: 'Tất cả', title: 'Không lọc theo độ dài' },
   { key: 'easy', label: 'Dễ', title: 'Câu ngắn, dưới 45 từ' },
@@ -31,32 +47,40 @@ const ORDERS = [
   { key: 'sequence', label: 'Theo số', title: 'Theo thứ tự đề gốc' }
 ];
 
-const LEVEL_LABELS = {
-  '-1': 'học lại', 0: 'cấp 1', 1: 'cấp 2', 2: 'cấp 3', 3: 'cấp 4', 4: 'nhớ sâu'
-};
-const levelLabel = (level) => LEVEL_LABELS[String(level)] || `cấp ${Number(level) + 1}`;
-
-/**
- * The prompt quotes the word under test ( ... the word "prized" is closest ... ),
- * so pulling the quotes out lets the eye land on it instead of re-reading the
- * whole sentence.
- */
-function HighlightedPrompt({ text }) {
-  const parts = String(text || '').split(/"([^"]+)"/g);
+function Segmented({ items, value, onChange, label }) {
   return (
-    <p className="q-prompt">
-      {parts.map((part, i) => (
-        i % 2 === 1 ? <strong key={i} className="q-target">{part}</strong> : <span key={i}>{part}</span>
+    <div
+      className="segmented segmented-even"
+      role="group"
+      aria-label={label}
+      style={{ '--seg-count': items.length, '--seg-index': Math.max(items.findIndex(i => i.key === value), 0) }}
+    >
+      <span className="segmented-thumb" aria-hidden="true" />
+      {items.map(i => (
+        <button
+          key={i.key || 'all'}
+          type="button"
+          className={`segmented-btn ${value === i.key ? 'active' : ''}`}
+          onClick={() => onChange(i.key)}
+          title={i.title}
+          aria-pressed={value === i.key}
+        >
+          {i.label}
+        </button>
       ))}
-    </p>
+    </div>
   );
 }
 
 export default function QuestionsPage() {
   const { user } = useContext(AuthContext);
+  const { refreshStreak } = useContext(StreakContext);
   const [searchParams] = useSearchParams();
   const notebookId = searchParams.get('notebook_id');
 
+  const [sets, setSets] = useState([]);
+  const [setSlug, setSetSlug] = useState(readStoredSet);
+  const [skill, setSkill] = useState('');
   const [query, setQuery] = useState('');
   const [onlyStudied, setOnlyStudied] = useState(false);
   const [dueNow, setDueNow] = useState(false);
@@ -83,11 +107,35 @@ export default function QuestionsPage() {
   const [selectedKey, setSelectedKey] = useState(null);
   const [result, setResult] = useState(null);
 
+  const isSat = setSlug === SAT_SET;
+
   useEffect(() => {
     fetchTags('word').then(d => setTags((d.tags || []).filter(t => t.word_count > 0))).catch(() => {});
+    fetchQuestionSets()
+      .then(d => {
+        const list = (d.sets || []).filter(s => s.count > 0);
+        setSets(list);
+        // A remembered set that no longer exists falls back to the first one.
+        setSetSlug(prev => (list.some(s => s.slug === prev) ? prev : (list[0]?.slug || prev)));
+      })
+      .catch(() => {});
   }, []);
 
+  const chooseSet = (slug) => {
+    setSetSlug(slug);
+    setSkill('');
+    setDifficulty('');
+    try { localStorage.setItem(SET_KEY, slug); } catch { /* private mode: just not remembered */ }
+  };
+
+  const skills = useMemo(() => {
+    const current = sets.find(s => s.slug === setSlug);
+    return (current?.skills || []).slice().sort();
+  }, [sets, setSlug]);
+
   const filters = useMemo(() => ({
+    set: setSlug,
+    skill: isSat ? skill || undefined : undefined,
     q: query.trim(),
     tags: selectedTags,
     notebook_id: notebookId || undefined,
@@ -95,10 +143,10 @@ export default function QuestionsPage() {
     due_now: dueNow,
     unanswered: status === 'unanswered',
     got_wrong: status === 'got_wrong',
-    difficulty: difficulty || undefined,
+    difficulty: !isSat ? difficulty || undefined : undefined,
     order,
     limit: PAGE_SIZE
-  }), [query, selectedTags, notebookId, onlyStudied, dueNow, status, difficulty, order]);
+  }), [setSlug, isSat, skill, query, selectedTags, notebookId, onlyStudied, dueNow, status, difficulty, order]);
 
   // Filters changed: back to the first page and the first question. Signing in
   // or out counts too, because it changes whose progress the filters read.
@@ -150,6 +198,7 @@ export default function QuestionsPage() {
     try {
       const data = await submitQuestionAttempt(current, key);
       setResult(data);
+      if (current.set_slug === SAT_SET) refreshStreak();
     } catch {
       // Keeping the local verdict is better than blanking the card.
     }
@@ -171,47 +220,38 @@ export default function QuestionsPage() {
   const toggleTag = (slug) =>
     setSelectedTags(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]);
 
-  const optionClass = (key) => {
-    if (!selectedKey) return '';
-    if (key === current.answer_key) return 'correct';
-    if (key === selectedKey) return 'wrong';
-    return '';
-  };
-
   const studiedWords = (current?.words || []).filter(w => w.studied);
+
+  const setItems = (sets.length > 0 ? sets : [{ slug: SAT_SET, count: null }, { slug: WIC_SET, count: null }])
+    .map(s => ({
+      key: s.slug,
+      label: `${SET_LABELS[s.slug] || s.title}${s.count ? ` (${s.count})` : ''}`,
+      title: s.title
+    }));
 
   return (
     <div className="questions-page">
       <GuestNotice compact />
 
+      <DailyPanel />
+
       <div className="questions-filters card">
+        <div className="q-filter-row">
+          <div className="q-group">
+            <span className="q-group-label">Bộ đề</span>
+            <Segmented items={setItems} value={setSlug} onChange={chooseSet} label="Bộ câu hỏi" />
+          </div>
+        </div>
+
         <div className="q-filter-row">
           <SearchInput
             value={query}
             onChange={setQuery}
             onClear={() => setQuery('')}
-            placeholder="Tìm trong câu hỏi hoặc đáp án..."
+            placeholder={isSat ? 'Tìm trong đoạn văn, câu hỏi, đáp án...' : 'Tìm trong câu hỏi hoặc đáp án...'}
             compact
           />
-          <div
-            className="segmented segmented-even"
-            role="group"
-            aria-label="Trạng thái"
-            style={{ '--seg-count': STATUSES.length, '--seg-index': STATUSES.findIndex(s => s.key === status) }}
-          >
-            <span className="segmented-thumb" aria-hidden="true" />
-            {STATUSES.map(s => (
-              <button
-                key={s.key}
-                type="button"
-                className={`segmented-btn ${status === s.key ? 'active' : ''}`}
-                onClick={() => setStatus(s.key)}
-                aria-pressed={status === s.key}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <Segmented items={STATUSES} value={status} onChange={setStatus} label="Trạng thái" />
         </div>
 
         <div className="q-filter-row">
@@ -234,52 +274,28 @@ export default function QuestionsPage() {
         </div>
 
         <div className="q-filter-row">
-          <div className="q-group">
-            <span className="q-group-label">Độ dài</span>
-            <div
-              className="segmented segmented-even"
-              role="group"
-              aria-label="Độ dài câu hỏi"
-              style={{ '--seg-count': DIFFICULTIES.length, '--seg-index': DIFFICULTIES.findIndex(d => d.key === difficulty) }}
-            >
-              <span className="segmented-thumb" aria-hidden="true" />
-              {DIFFICULTIES.map(d => (
-                <button
-                  key={d.key || 'all'}
-                  type="button"
-                  className={`segmented-btn ${difficulty === d.key ? 'active' : ''}`}
-                  onClick={() => setDifficulty(d.key)}
-                  title={d.title}
-                  aria-pressed={difficulty === d.key}
-                >
-                  {d.label}
-                </button>
-              ))}
+          {isSat ? (
+            skills.length > 0 && (
+              <div className="q-group">
+                <span className="q-group-label">Kỹ năng</span>
+                <Segmented
+                  items={[{ key: '', label: 'Tất cả' }, ...skills.map(s => ({ key: s, label: skillLabel(s), title: s }))]}
+                  value={skill}
+                  onChange={setSkill}
+                  label="Kỹ năng SAT"
+                />
+              </div>
+            )
+          ) : (
+            <div className="q-group">
+              <span className="q-group-label">Độ dài</span>
+              <Segmented items={DIFFICULTIES} value={difficulty} onChange={setDifficulty} label="Độ dài câu hỏi" />
             </div>
-          </div>
+          )}
 
           <div className="q-group">
             <span className="q-group-label">Thứ tự</span>
-            <div
-              className="segmented segmented-even"
-              role="group"
-              aria-label="Thứ tự câu hỏi"
-              style={{ '--seg-count': ORDERS.length, '--seg-index': ORDERS.findIndex(o => o.key === order) }}
-            >
-              <span className="segmented-thumb" aria-hidden="true" />
-              {ORDERS.map(o => (
-                <button
-                  key={o.key}
-                  type="button"
-                  className={`segmented-btn ${order === o.key ? 'active' : ''}`}
-                  onClick={() => setOrder(o.key)}
-                  title={o.title}
-                  aria-pressed={order === o.key}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
+            <Segmented items={ORDERS} value={order} onChange={setOrder} label="Thứ tự câu hỏi" />
           </div>
 
           {order === 'random' && (
@@ -330,91 +346,14 @@ export default function QuestionsPage() {
       )}
 
       {current && (
-        <div className="card questions-card">
-          <div className="quiz-progress-bar">
-            <div className="quiz-progress-fill" style={{ width: `${(index / Math.max(total, 1)) * 100}%` }} />
-          </div>
-          <div className="quiz-header">
-            Câu {index + 1} / {total}
-            {current.external_id ? ` · #${current.external_id}` : ''}
-            {current.word_count != null && (
-              <span
-                className={`chip q-diff ${current.difficulty || ''}`}
-                title={current.difficulty === 'hard' ? 'Câu dài, từ 45 từ trở lên' : 'Câu ngắn, dưới 45 từ'}
-              >
-                {current.difficulty === 'hard' ? 'Khó' : 'Dễ'} · {current.word_count} từ
-              </span>
-            )}
-          </div>
-
-          <HighlightedPrompt text={current.prompt} />
-
-          <div className="quiz-options">
-            {Object.entries(current.options || {}).map(([key, text]) => (
-              <div
-                key={key}
-                className={`quiz-option ${optionClass(key)} ${selectedKey ? 'disabled' : ''}`}
-                role="button"
-                onClick={() => answer(key)}
-              >
-                <span className="q-option-key">{key}</span>
-                <span className="opt-main-text">{text}</span>
-              </div>
-            ))}
-          </div>
-
-          {selectedKey && (
-            <div className={`q-result ${result?.is_correct ? 'is-correct' : 'is-wrong'}`}>
-              <div className="q-result-verdict">
-                {result?.is_correct
-                  ? <><i className="fa-solid fa-check" /> Chính xác</>
-                  : <><i className="fa-solid fa-xmark" /> Đáp án đúng: {current.answer_key}. {current.options[current.answer_key]}</>}
-              </div>
-
-              {current.explanation && <p className="q-explanation">{current.explanation}</p>}
-
-              <div>
-                <AskAiButton
-                  getContext={() => questionContext(current, selectedKey)}
-                  label="Hỏi AI giải thích câu này"
-                />
-              </div>
-
-              {result?.updated_progress?.length > 0 && (
-                <div className="q-progress-change">
-                  {result.updated_progress.map(u => (
-                    <span key={u.vocab_id} className="chip">
-                      {/* A word already at the top level stays there, so saying
-                          "nhớ sâu → nhớ sâu" would read like a bug. */}
-                      {u.previous_level === u.new_level
-                        ? <>{u.word}: giữ mức <strong>{levelLabel(u.new_level)}</strong></>
-                        : <>{u.word}: {levelLabel(u.previous_level)} → <strong>{levelLabel(u.new_level)}</strong></>}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {(current.words || []).length > 0 && (
-                <div className="q-words">
-                  <span className="q-words-label">Từ trong câu này:</span>
-                  {current.words.map(w => (
-                    <span
-                      key={`${w.id}-${w.role}`}
-                      className={`chip q-word ${w.studied ? 'studied' : ''} ${w.due ? 'due' : ''}`}
-                      title={[
-                        w.role === 'target' ? 'từ được hỏi' : 'đáp án',
-                        w.vietnamese_meaning || w.meaning,
-                        w.studied ? `đã học · ${levelLabel(w.repetition_level)}` : 'chưa học'
-                      ].filter(Boolean).join(' · ')}
-                    >
-                      {w.word}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
+        <QuestionCard
+          question={current}
+          selectedKey={selectedKey}
+          result={result}
+          onAnswer={answer}
+          progress={index / Math.max(total, 1)}
+          header={<>Câu {index + 1} / {total}{current.external_id ? ` · #${current.external_id}` : ''}</>}
+        >
           <div className="q-nav">
             <button className="btn-outline" onClick={prev} disabled={index === 0}>
               <i className="fa-solid fa-arrow-left" /> Câu trước
@@ -432,7 +371,7 @@ export default function QuestionsPage() {
               Câu tiếp <i className="fa-solid fa-arrow-right" />
             </button>
           </div>
-        </div>
+        </QuestionCard>
       )}
     </div>
   );

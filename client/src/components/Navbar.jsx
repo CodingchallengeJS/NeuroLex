@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 import GlobalSearchBar from './GlobalSearchBar';
 import SettingsModal from './SettingsModal';
+import StreakBadge from './StreakBadge';
 
 export default function Navbar() {
   const { user, logout, authOpen, openAuth, closeAuth, mergeNotice, dismissMergeNotice } = useContext(AuthContext);
@@ -29,6 +30,7 @@ export default function Navbar() {
           <Link to="/about">Giới thiệu</Link>
         </div>
         <div className="nav-actions">
+          <StreakBadge />
           {/* An icon, not a text link: .nav-links is hidden on phones, and this
               keeps the donate page reachable there. */}
           <Link to="/donate" className="icon-btn donate-btn" title="Ủng hộ NeuroLex" aria-label="Ủng hộ NeuroLex">

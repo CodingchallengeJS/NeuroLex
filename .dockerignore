@@ -19,3 +19,7 @@ backups/
 a.cpp
 **/__pycache__
 **/*.pyc
+
+# Source PDFs for the SAT bank (~31 MB). Only the JSON and figure PNGs that
+# other-tools/parse-sat-pdf.py produces from them are needed at runtime.
+server/assets/CB-full-hard/
