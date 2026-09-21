@@ -1555,9 +1555,14 @@ p { font-size: 1rem; color: var(--text-soft); }
 .q-figure img { max-width: 100%; max-height: 420px; height: auto; display: inline-block; }
 /* Passage and answer choices read like the Bluebook test page; the rest of
    the app keeps Lexend. Minion Pro is not a web font, so it only shows where
-   it is installed (e.g. with Adobe apps); everyone else gets Times New Roman. */
+   it is installed (e.g. with Adobe apps); everyone else gets Times New Roman.
+   The descendant selectors matter: `* { font-family: Lexend }` near the top
+   sets the font on every element, so the passage's <p>/<span>/<u> would not
+   inherit it from .q-passage. */
 .q-passage,
-.q-options-long .opt-main-text {
+.q-passage *,
+.q-options-long .opt-main-text,
+.q-options-long .opt-main-text * {
   font-family: 'Minion Pro', 'Times New Roman', Times, serif;
 }
 .q-passage {
