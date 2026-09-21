@@ -1553,9 +1553,16 @@ p { font-size: 1rem; color: var(--text-soft); }
   text-align: center;
 }
 .q-figure img { max-width: 100%; max-height: 420px; height: auto; display: inline-block; }
+/* Passage and answer choices read like the Bluebook test page; the rest of
+   the app keeps Lexend. Minion Pro is not a web font, so it only shows where
+   it is installed (e.g. with Adobe apps); everyone else gets Times New Roman. */
+.q-passage,
+.q-options-long .opt-main-text {
+  font-family: 'Minion Pro', 'Times New Roman', Times, serif;
+}
 .q-passage {
-  font-size: 1rem;
-  line-height: 1.75;
+  font-size: 1.12rem;
+  line-height: 1.7;
   color: var(--text);
   margin-bottom: 1.25rem;
   padding: 1rem 1.25rem;
@@ -1570,7 +1577,8 @@ p { font-size: 1rem; color: var(--text-soft); }
 .q-prompt.q-stem { font-weight: 600; margin-bottom: 1rem; }
 .questions-card .quiz-options.q-options-long { grid-template-columns: 1fr; }
 .q-options-long .quiz-option { align-items: flex-start; }
-.q-options-long .opt-main-text { font-size: 0.98rem; line-height: 1.55; }
+/* Serif faces run smaller than Lexend at the same size, hence the bump. */
+.q-options-long .opt-main-text { font-size: 1.08rem; line-height: 1.55; }
 .q-explanation p { margin: 0 0 0.6rem; }
 .q-explanation p:last-child { margin-bottom: 0; }
 
